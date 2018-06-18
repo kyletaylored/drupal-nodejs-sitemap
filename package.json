@@ -1,0 +1,24 @@
+{
+  "name": "drupal-nodejs-sitemap",
+  "version": "1.0.0",
+  "description": "Sitemap crawler for Drupal",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "drupal",
+    "sitemap",
+    "crawler"
+  ],
+  "author": "Kyle Taylor",
+  "license": "ISC",
+  "dependencies": {
+    "cheerio": "^1.0.0-rc.2",
+    "cli-progress": "^2.0.0",
+    "prompt": "^1.0.0",
+    "request": "^2.87.0",
+    "sitemapper": "^2.1.13",
+    "url-parse": "^1.4.1"
+  }
+}
