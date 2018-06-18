@@ -3,9 +3,17 @@ var request = require('request');
 var cheerio = require('cheerio');
 var url = require('url-parse');
 var Sitemapper = require('sitemapper');
+var cliProgress = require('cli-progress');
+const fs = require('fs');
+var jsonfile = require('jsonfile');
 
-// Instantiate new Sitemapper.
+// Instantiate new Sitemapper, progress bar, and json file.
 var sitemap = new Sitemapper();
+var bar = new cliProgress.Bar({}, cliProgress.Presets.shades_classic);
+var file = './data.json';
+
+// Create form / node pages.
+var formTypes, pageTypes = {};
 
 // Create prompt input.
 var properties = [
@@ -16,8 +24,8 @@ var properties = [
   }
 ];
 
+// Start capturing input.
 prompt.start();
-
 prompt.get(properties, function (err, result) {
   if (err) { return onErr(err); }
   console.log('Command-line input received:');
@@ -28,35 +36,75 @@ prompt.get(properties, function (err, result) {
   // parseWebpage(result.url);
 });
 
-
+/*
+ * Process sitemap.
+ */
 function parseSitemap(url) {
   sitemap.fetch(url).then(function(sites) {
-    // console.log(sites);
-    sites.sites.forEach(url => processSitemapPage(url));
+    // start the progress bar with total value of sites.
+    console.log(sites.sites.length);
+    bar.start(sites.sites.length, 0);
+    sites.sites.forEach(url => parseWebpage(url));
   });
-
+  // stop the progress bar
+  bar.stop();
 }
 
-function processSitemapPage(url) {
-  parseWebpage(url);
-}
-
+/*
+ * Process webpage for classes.
+ */
 function parseWebpage(page) {
-  console.log("Visiting page " + page);
+  // Update the current value of progress by 1, even if request fails.
+  bar.increment();
+  // Make request for page content.
   request(page, function(error, response, body) {
     if (error) {
-      console.log("Error: " + error);
+      onErr(error);
     }
+    // Sometimes there isn't always a response.
     if (response) {
       // Check status code (200 is HTTP OK)
       console.log("Status code: " + response.statusCode);
-      if(response.statusCode === 200) {
+      if(response.statusCode === 200 && body) {
         // Parse the document body
         var $ = cheerio.load(body);
-        console.log("Page title:  " + $('title').text());
+        // Extract from body.
+        let htmlBody = $('body');
+        let forms = $('form');
+        extractNodeTypes(htmlBody, this.uri.href, pageTypes);
+        extractFormTypes(forms, this.uri.href, formTypes);
+
       }
     }
   });
+}
+
+function extractNodeTypes(body, url, docstore) {
+  let classes = body.attr('class');
+  let nodeType = null;
+  classes.split(' ').forEach(function(classe){
+    if (classe.includes('node-type-')) {
+      let nodeType = classe;
+    }
+  });
+  storeResults(pageTypes, nodeType, url)
+}
+
+function extractFormTypes(forms, url, docstore) {
+  if (forms) {
+
+  }
+}
+
+function storeResults(docstore, name, url) {
+  // Init count and type.
+  docstore[name] = {
+    count: 0,
+    urls: []
+  };
+
+  docstore[name].count++;
+  docstore[name].urls.push(url);
 }
 
 // Helper error function.
