@@ -10,10 +10,10 @@ var jsonfile = require('jsonfile');
 // Instantiate new Sitemapper, progress bar, and json file.
 var sitemap = new Sitemapper();
 var bar = new cliProgress.Bar({}, cliProgress.Presets.shades_classic);
-var file = './data.json';
+var file = './results.json';
 
 // Create form / node pages.
-var formTypes, pageTypes = {};
+var formTypes, nodeTypes = {};
 
 // Create prompt input.
 var properties = [
@@ -42,52 +42,63 @@ prompt.get(properties, function (err, result) {
 function parseSitemap(url) {
   sitemap.fetch(url).then(function(sites) {
     // start the progress bar with total value of sites.
-    console.log(sites.sites.length);
+    // console.log(sites.sites.length);
     bar.start(sites.sites.length, 0);
     sites.sites.forEach(url => parseWebpage(url));
   });
   // stop the progress bar
   bar.stop();
+
+  // Write to file.
+  var results = {
+    "nodes": nodeTypes,
+    "forms": formTypes
+  }
+  jsonfile.writeFile(file, results, function (err) {
+    console.error(err)
+  });
+  // Kill process.
+  process.exit();
 }
 
 /*
  * Process webpage for classes.
  */
 function parseWebpage(page) {
-  // Update the current value of progress by 1, even if request fails.
-  bar.increment();
   // Make request for page content.
   request(page, function(error, response, body) {
     if (error) {
-      onErr(error);
+      // onErr(error);
     }
     // Sometimes there isn't always a response.
     if (response) {
       // Check status code (200 is HTTP OK)
-      console.log("Status code: " + response.statusCode);
+      // console.log("Status code: " + response.statusCode);
       if(response.statusCode === 200 && body) {
         // Parse the document body
         var $ = cheerio.load(body);
         // Extract from body.
         let htmlBody = $('body');
         let forms = $('form');
-        extractNodeTypes(htmlBody, this.uri.href, pageTypes);
+        extractNodeTypes(htmlBody, this.uri.href, nodeTypes);
         extractFormTypes(forms, this.uri.href, formTypes);
 
       }
     }
+    // Update the current value of progress by 1, even if request fails.
+    bar.increment();
   });
 }
 
 function extractNodeTypes(body, url, docstore) {
   let classes = body.attr('class');
   let nodeType = null;
-  classes.split(' ').forEach(function(classe){
+  for (classe of classes.split(' ')) {
     if (classe.includes('node-type-')) {
-      let nodeType = classe;
+      storeResults(nodeTypes, classe, url)
+      break;
     }
-  });
-  storeResults(pageTypes, nodeType, url)
+  }
 }
 
 function extractFormTypes(forms, url, docstore) {
@@ -103,7 +114,7 @@ function storeResults(docstore, name, url) {
     urls: []
   };
 
-  docstore[name].count++;
+  docstore[name].count = docstore[name].count + 1;
   docstore[name].urls.push(url);
 }
 
