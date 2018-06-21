@@ -6,6 +6,7 @@ var Sitemapper = require('sitemapper');
 var cliProgress = require('cli-progress');
 const fs = require('fs');
 var jsonfile = require('jsonfile');
+const forEP = require('foreach-promise');
 
 // Instantiate new Sitemapper, progress bar, and json file.
 var sitemap = new Sitemapper();
@@ -31,6 +32,8 @@ prompt.get(properties, function (err, result) {
   console.log('Command-line input received:');
   console.log('  URL: ' + result.url);
 
+  // Use URL as part of JSON file name (in case running multiple scans.)
+  file = './results/' + result.url.split('.')[1] + '-results.json';
   parseSitemap(result.url);
   // Parse page.
   // parseWebpage(result.url);
@@ -44,21 +47,26 @@ function parseSitemap(url) {
     // start the progress bar with total value of sites.
     // console.log(sites.sites.length);
     bar.start(sites.sites.length, 0);
-    sites.sites.forEach(url => parseWebpage(url));
-  });
-  // stop the progress bar
-  bar.stop();
 
-  // Write to file.
-  var results = {
-    "nodes": nodeTypes,
-    "forms": formTypes
-  }
-  jsonfile.writeFile(file, results, function (err) {
-    console.error(err)
+    for (var i = 0; i < sites.sites.length; i++) {
+      parseWebpage(sites.sites[i]);
+    }
+
+    // stop the progress bar
+    bar.stop();
+
+    // Write to file.
+    var results = {
+      "nodes": nodeTypes,
+      "forms": formTypes
+    }
+    jsonfile.writeFile(file, results, function (err) {
+      console.error(err)
+    });
+    // Kill process.
+    process.exit();
+
   });
-  // Kill process.
-  process.exit();
 }
 
 /*
@@ -79,9 +87,9 @@ function parseWebpage(page) {
         var $ = cheerio.load(body);
         // Extract from body.
         let htmlBody = $('body');
-        let forms = $('form');
+        let forms = $('form', htmlBody);
         extractNodeTypes(htmlBody, this.uri.href, nodeTypes);
-        extractFormTypes(forms, this.uri.href, formTypes);
+        // extractFormTypes(forms, this.uri.href, formTypes);
 
       }
     }
@@ -90,29 +98,45 @@ function parseWebpage(page) {
   });
 }
 
+/**
+ * Extract node data.
+ */
 function extractNodeTypes(body, url, docstore) {
   let classes = body.attr('class');
   let nodeType = null;
-  for (classe of classes.split(' ')) {
-    if (classe.includes('node-type-')) {
-      storeResults(nodeTypes, classe, url)
+  for (className of classes.split(' ')) {
+    if (className.includes('node-type-')) {
+      storeResults(nodeTypes, className.substr(10), url)
       break;
     }
   }
 }
 
+/**
+ * Extract form data.
+ */
 function extractFormTypes(forms, url, docstore) {
-  if (forms) {
+  if (forms.length > 0) {
+    forms.forEach(function(form) {
+      storeResults(formTypes, form.attr('id'), url);
+    });
 
   }
 }
 
+/**
+ * Create a section in the larger doctore object to keep node and form data
+ * while we're processing each request. Keep an array of URLs attached to each
+ * keyed ID or name.
+ */
 function storeResults(docstore, name, url) {
   // Init count and type.
-  docstore[name] = {
-    count: 0,
-    urls: []
-  };
+  if (!docstore[name]) {
+    docstore[name] = {
+      count: 0,
+      urls: []
+    };
+  }
 
   docstore[name].count = docstore[name].count + 1;
   docstore[name].urls.push(url);
