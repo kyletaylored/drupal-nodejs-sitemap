@@ -17,6 +17,7 @@
     "cheerio": "^1.0.0-rc.2",
     "cli-progress": "^2.0.0",
     "jsonfile": "^4.0.0",
+    "meta-extractor": "^1.4.0",
     "node-fetch": "^2.1.2",
     "prompt": "^1.0.0",
     "request": "^2.87.0",
