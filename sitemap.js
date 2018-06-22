@@ -4,11 +4,15 @@ const Sitemapper = require('sitemapper')
 const fetch = require('node-fetch')
 const jsonfile = require('jsonfile')
 const cliProgress = require('cli-progress')
+const url = require('url')
 
 let sitemap = new Sitemapper()
 let bar = new cliProgress.Bar({}, cliProgress.Presets.shades_classic)
 let file = './results/sitemap-results.json'
 let log = console.log.bind(this)
+
+// Debugging
+// let loopLimit = 20
 
 // Docstore.
 let nodeTypes = {}
@@ -25,17 +29,21 @@ var properties = [
 ]
 
 // Main function to run.
-async function main (sitemapUrl) {
+async function main (sitemapUrl, file) {
   try {
     let sites = await sitemap.fetch(sitemapUrl)
     bar.start(sites.sites.length, 0)
-    await asyncForEach(sites.sites, async url => processSitemapPage(url))
+    await asyncForEach(sites.sites, async uri => processSitemapPage(uri))
   } catch (err) {
     console.log('Err: ', err)
   }
 
   await bar.stop()
-  await log({ 'Node Types': nodeTypes, statusCodes: statusCodes })
+  await log({
+    nodeTypes: nodeTypes,
+    formTypes: formTypes,
+    statusCodes: statusCodes
+  })
   await jsonfile.writeFile(
     file,
     {
@@ -49,14 +57,15 @@ async function main (sitemapUrl) {
 
 // Helper function for async processing in a for loop.
 async function asyncForEach (array, callback) {
+  // let limit = loopLimit || array.length
   for (let index = 0; index < array.length; index++) {
     await callback(array[index], index, array)
   }
 }
 
 // Process the URL in the sitemap, store results in docstore.
-async function processSitemapPage (url) {
-  await fetch(url)
+async function processSitemapPage (uri) {
+  await fetch(uri)
     .then(resp =>
       resp.text().then(body => {
         if (resp.status === 200 && body) {
@@ -65,12 +74,11 @@ async function processSitemapPage (url) {
           // Extract from body.
           let htmlBody = $('body')
           let forms = $('form', htmlBody)
-          extractNodeTypes(htmlBody, url, nodeTypes)
-          extractFormTypes(forms, url, formTypes)
+          extractNodeTypes(htmlBody, uri, nodeTypes)
+          extractFormTypes(forms, uri, formTypes)
         } else {
-          // TODO: this never gets called...
-          log('STATUS: ', resp.status)
-          storeResults(statusCodes, resp.status, url)
+          // If response fails, store that record.
+          storeResults(statusCodes, resp.status, uri)
         }
       })
     )
@@ -83,11 +91,11 @@ async function processSitemapPage (url) {
 /**
  * Extract node data.
  */
-async function extractNodeTypes (body, url, docstore) {
+async function extractNodeTypes (body, uri, docstore) {
   let classes = await body.attr('class')
   for (let className of classes.split(' ')) {
     if (className.includes('node-type-')) {
-      storeResults(docstore, className.substr(10), url)
+      storeResults(docstore, className.substr(10), uri)
       break
     }
   }
@@ -96,10 +104,10 @@ async function extractNodeTypes (body, url, docstore) {
 /**
  * Extract form data.
  */
-async function extractFormTypes (forms, url, docstore) {
+async function extractFormTypes (forms, uri, docstore) {
   if (forms.length > 0) {
     for (var i = 0; i < forms.length; i++) {
-      storeResults(docstore, forms[i].attribs.id, url)
+      storeResults(docstore, forms[i].attribs.id, uri)
     }
   }
 }
@@ -109,7 +117,7 @@ async function extractFormTypes (forms, url, docstore) {
  * while we're processing each request. Keep an array of URLs attached to each
  * keyed ID or name.
  */
-function storeResults (docstore, name, url) {
+function storeResults (docstore, name, uri) {
   // Init count and type.
   if (!docstore[name]) {
     docstore[name] = {
@@ -119,7 +127,7 @@ function storeResults (docstore, name, url) {
   }
 
   docstore[name].count = docstore[name].count + 1
-  docstore[name].urls.push(url)
+  docstore[name].urls.push(uri)
 }
 
 // Launch script.
@@ -130,12 +138,12 @@ prompt.get(properties, function (err, result) {
     return onErr(err)
   }
   console.log('Command-line input received:')
-  // console.log('  URL: ' + result.url)
-  console.tabple(result)
+  console.table(result)
 
   // Use URL as part of JSON file name (in case running multiple scans.)
-  file = './results/' + result.url.split('.')[1] + '-results.json'
+  let path = new URL(result.url)
+  file = 'results/' + path.hostname + '-results.json'
 
   // Parse sitemap.
-  main(result.url)
+  main(result.url, file)
 })

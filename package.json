@@ -2,9 +2,10 @@
   "name": "drupal-nodejs-sitemap",
   "version": "1.0.0",
   "description": "Sitemap crawler for Drupal",
-  "main": "index.js",
+  "main": "sitemap.js",
   "scripts": {
-    "pretest": "eslint index.js --fix"
+    "pretest": "eslint index.js --fix",
+    "crawl": "node sitemap.js"
   },
   "keywords": [
     "drupal",
