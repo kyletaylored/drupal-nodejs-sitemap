@@ -101,7 +101,7 @@ function extractNodeTypes (body, url, docstore) {
   let classes = body.attr('class')
   for (let className of classes.split(' ')) {
     if (className.includes('node-type-')) {
-      storeResults(nodeTypes, className.substr(10), url)
+      storeResults(docstore, className.substr(10), url)
       break
     }
   }
@@ -113,7 +113,7 @@ function extractNodeTypes (body, url, docstore) {
 function extractFormTypes (forms, url, docstore) {
   if (forms.length > 0) {
     forms.forEach(function (form) {
-      storeResults(formTypes, form.attr('id'), url)
+      storeResults(docstore, form.attr('id'), url)
     })
   }
 }
