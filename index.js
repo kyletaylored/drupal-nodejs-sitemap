@@ -1,12 +1,9 @@
 var prompt = require('prompt')
 var request = require('request')
 var cheerio = require('cheerio')
-var url = require('url-parse')
 var Sitemapper = require('sitemapper')
 var cliProgress = require('cli-progress')
-const fs = require('fs')
 var jsonfile = require('jsonfile')
-const forEP = require('foreach-promise')
 
 // Instantiate new Sitemapper, progress bar, and json file.
 var sitemap = new Sitemapper()
@@ -14,7 +11,8 @@ var bar = new cliProgress.Bar({}, cliProgress.Presets.shades_classic)
 var file = './results.json'
 
 // Create form / node pages.
-var formTypes, nodeTypes = {}
+var formTypes = {}
+var nodeTypes = {}
 
 // Create prompt input.
 var properties = [
@@ -34,9 +32,9 @@ prompt.get(properties, function (err, result) {
 
   // Use URL as part of JSON file name (in case running multiple scans.)
   file = './results/' + result.url.split('.')[1] + '-results.json'
+
+  // Parse sitemap.
   parseSitemap(result.url)
-  // Parse page.
-  // parseWebpage(result.url);
 })
 
 /*
@@ -101,8 +99,7 @@ function parseWebpage (page) {
  */
 function extractNodeTypes (body, url, docstore) {
   let classes = body.attr('class')
-  let nodeType = null
-  for (className of classes.split(' ')) {
+  for (let className of classes.split(' ')) {
     if (className.includes('node-type-')) {
       storeResults(nodeTypes, className.substr(10), url)
       break
