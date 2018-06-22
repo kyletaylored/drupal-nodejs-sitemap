@@ -5,6 +5,7 @@ const fetch = require('node-fetch')
 const jsonfile = require('jsonfile')
 const cliProgress = require('cli-progress')
 const url = require('url')
+const extract = require('meta-extractor')
 
 let sitemap = new Sitemapper()
 let bar = new cliProgress.Bar({}, cliProgress.Presets.shades_classic)
@@ -18,6 +19,7 @@ let log = console.log.bind(this)
 let nodeTypes = {}
 let formTypes = {}
 let statusCodes = {}
+let metadata = {}
 
 // Create prompt input.
 var properties = [
@@ -30,6 +32,13 @@ var properties = [
 
 // Main function to run.
 async function main (sitemapUrl, file) {
+  // Use URL as part of JSON file name (in case running multiple scans.)
+  let path = new URL(sitemapUrl)
+  file = 'results/' + path.hostname + '.json'
+
+  // Get metadata.
+  extract({ uri: path.origin }, (err, res) => (metadata = res))
+
   try {
     let sites = await sitemap.fetch(sitemapUrl)
     bar.start(sites.sites.length, 0)
@@ -38,15 +47,21 @@ async function main (sitemapUrl, file) {
     console.log('Err: ', err)
   }
 
+  // Kill progress bar.
   await bar.stop()
+
   await log({
+    metadata: metadata,
     nodeTypes: nodeTypes,
     formTypes: formTypes,
     statusCodes: statusCodes
   })
+
+  // Write results to json.
   await jsonfile.writeFile(
     file,
     {
+      metadata: metadata,
       nodes: nodeTypes,
       forms: formTypes,
       statusCodes: statusCodes
@@ -139,10 +154,6 @@ prompt.get(properties, function (err, result) {
   }
   console.log('Command-line input received:')
   console.table(result)
-
-  // Use URL as part of JSON file name (in case running multiple scans.)
-  let path = new URL(result.url)
-  file = 'results/' + path.hostname + '-results.json'
 
   // Parse sitemap.
   main(result.url, file)
