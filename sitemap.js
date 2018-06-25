@@ -131,6 +131,12 @@ function storeResults (docstore, name, uri) {
   docstore[name].urls.push(uri)
 }
 
+// Report errors.
+function onErr(err) {
+	console.log(err)
+	return 1
+}
+
 // Create prompt input.
 var properties = [
   {
