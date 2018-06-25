@@ -21,15 +21,6 @@ let formTypes = {}
 let statusCodes = {}
 let metadata = {}
 
-// Create prompt input.
-var properties = [
-  {
-    name: 'url',
-    validator: /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_.~#?&//=]*)?/gi,
-    warning: 'URL must include HTTP or HTTPS.'
-  }
-]
-
 // Main function to run.
 async function main (sitemapUrl, file) {
   // Use URL as part of JSON file name (in case running multiple scans.)
@@ -50,24 +41,19 @@ async function main (sitemapUrl, file) {
   // Kill progress bar.
   await bar.stop()
 
-  await log({
+  // Merge into single object.
+  let metaObj = {
     metadata: metadata,
     nodeTypes: nodeTypes,
     formTypes: formTypes,
     statusCodes: statusCodes
-  })
+  }
+
+  // Print results
+  await log(metaObj)
 
   // Write results to json.
-  await jsonfile.writeFile(
-    file,
-    {
-      metadata: metadata,
-      nodes: nodeTypes,
-      forms: formTypes,
-      statusCodes: statusCodes
-    },
-    err => console.error(err)
-  )
+  await jsonfile.writeFile(file, metaObj, err => console.error(err))
 }
 
 // Helper function for async processing in a for loop.
@@ -145,6 +131,15 @@ function storeResults (docstore, name, uri) {
   docstore[name].urls.push(uri)
 }
 
+// Create prompt input.
+var properties = [
+  {
+    name: 'url',
+    validator: /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_.~#?&//=]*)?/gi,
+    warning: 'URL must include HTTP or HTTPS.'
+  }
+]
+
 // Launch script.
 // Start capturing input.
 prompt.start()
@@ -152,8 +147,8 @@ prompt.get(properties, function (err, result) {
   if (err) {
     return onErr(err)
   }
-  console.log('Command-line input received:')
-  console.table(result)
+  // console.log('Command-line input received:')
+  // console.table(result)
 
   // Parse sitemap.
   main(result.url, file)
