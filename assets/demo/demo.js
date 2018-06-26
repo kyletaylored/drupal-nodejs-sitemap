@@ -1,9 +1,9 @@
-let sitemapDB = new PouchDB('sitemaps')
+let db = new PouchDB('database.db', { adapter: 'websql' })
 
+console.log(db.info().then(info => console.log(info)))
 // Create / update master list of sitemaps stored in db.
-console.log(sitemapDB.adapter)
-sitemapDB
-  .get('masterList')
+console.log(db.adapter)
+db.get('masterList')
   .then(function (doc) {
     console.log(doc)
   })

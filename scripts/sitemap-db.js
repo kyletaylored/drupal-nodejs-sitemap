@@ -8,7 +8,10 @@ const url = require('url')
 const extract = require('meta-extractor')
 const PouchDB = require('pouchdb')
 
-let sitemapDB = new PouchDB('sitemaps')
+// Assign database.
+PouchDB.plugin(require('pouchdb-adapter-node-websql'))
+let db = new PouchDB('database.db', { adapter: 'websql' })
+
 let sitemap = new Sitemapper()
 let bar = new cliProgress.Bar({}, cliProgress.Presets.shades_classic)
 let file = './results/sitemap-results.json'
@@ -58,24 +61,22 @@ async function main (sitemapUrl, file) {
   await jsonfile.writeFile(file, metaObj, err => console.error(err))
 
   // Write metaObj to PouchDB
-  sitemapDB
-    .put(metaObj)
+  db.put(metaObj)
     .then(info => console.log(info))
     .then(err => console.log(err))
 
   // Create / update master list of sitemaps stored in db.
-  sitemapDB
-    .get('masterList')
+  db.get('masterList')
     .then(function (doc) {
       console.log(doc)
       doc.sitemaps.push(path.hostname)
-      sitemapDB.put(doc)
+      db.put(doc)
     })
     .catch(function (err) {
       console.log(err)
       // Create the list.
       if (err.name === 'not_found') {
-        sitemapDB.put({ _id: 'masterList', sitemaps: [path.hostname] })
+        db.put({ _id: 'masterList', sitemaps: [path.hostname] })
       }
     })
 }
