@@ -6,10 +6,16 @@ All you need to do is install the node modules, then run the sitemap script.
 
 ```bash
 npm install
-node sitemap.js
+node sitemap-json.js
 ```
 
-You will be prompted to enter the URL for the sitemap.xml file. The script will then begin analyze each page to detect node type body classes, forms, and any pages returned with non-success HTTP statuses.
+You will be prompted to enter the URL for the sitemap.xml file. The script will then begin analyze each page to detect metadata, node type body classes, forms, and any pages returned with non-success HTTP statuses.
+
+Alternatively, you can either pass in the sitemap URL as an argument, or wait for the prompt.
+
+```bash
+node sitemap-json.js https://www.example.com/sitemap.xml
+```
 
 The output will look similar to the following:
 
