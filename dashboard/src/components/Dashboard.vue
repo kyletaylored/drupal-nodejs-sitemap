@@ -2,18 +2,18 @@
   <div class="page-container">
     <md-app>
       <md-app-toolbar class="md-primary">
-        <span class="md-title">Drupal Content Audit</span>
+        <span class="md-title">{{sitemapMeta}}</span>
       </md-app-toolbar>
 
       <md-app-drawer md-permanent="full">
         <md-toolbar class="md-transparent" md-elevation="0">
-          Select sitemap
+          Drupal Content Audit
         </md-toolbar>
 
         <div class="md-layout md-gutter">
             <div class="md-layout-item md-small-size-100">
               <md-field>
-              <!-- <label for="sitemap">Sitemap</label> -->
+              <label for="sitemap">Sitemap</label>
               <md-select v-model="sitemapValue" name="sitemap" id="sitemap">
                 <md-option v-for="option in sitemapOptions" v-bind:key="option.name" v-bind:value="option.name">
                   {{ option.name }}
@@ -29,15 +29,34 @@
 
         <div class="md-layout md-gutter">
           <div class="md-layout-item">
+            <md-toolbar :md-elevation="1">
+              <span class="md-title">Node Type Overview</span>
+            </md-toolbar>
             <canvas id="nodeChart"></canvas>
           </div>
+          <md-table v-model="sitemapNodeUrls" md-card md-fixed-header>
+            <md-table-toolbar>
+              <h2 class="md-title">URLs</h2>
+            </md-table-toolbar>
+
+            <md-table-row slot="md-table-row" slot-scope="{ item }">
+              <md-table-cell md-label="Type" md-sort-by="type" md-numeric>{{ item.type }}</md-table-cell>
+              <md-table-cell md-label="URL" md-sort-by="url"><a :href="item.url">{{ item.url }}</a></md-table-cell>
+            </md-table-row>
+          </md-table>
         </div>
 
         <div class="md-layout md-gutter">
           <div class="md-layout-item">
+            <md-toolbar :md-elevation="1">
+              <span class="md-title">Form Type Overview</span>
+            </md-toolbar>
             <canvas id="formChart"></canvas>
           </div>
           <div class="md-layout-item">
+            <md-toolbar :md-elevation="1">
+              <span class="md-title">Status Code Overview</span>
+            </md-toolbar>
             <canvas id="statusChart"></canvas>
           </div>
         </div>
@@ -124,6 +143,7 @@ export default {
           ]
         }
       }
+      console.log(nodeTypes)
       return chartdata
     },
     sitemapForms: function() {
@@ -192,8 +212,20 @@ export default {
       }
       return chartdata
     },
+    sitemapNodeUrls: function() {
+      let nodeTypes = sitemap[this.sitemapValue].nodeTypes
+      let arr = []
+      Object.keys(nodeTypes).forEach(function(el, index) {
+        nodeTypes[el].urls.forEach(function(e, i) {
+          arr.push({ type: el, url: e })
+        })
+      })
+
+      return arr
+    },
     sitemapMeta: function() {
       let meta = this.sitemapValue
+      return sitemap[this.sitemapValue].metadata.title
     }
   },
   mounted() {
@@ -223,5 +255,8 @@ li {
 }
 a {
   color: #42b983;
+}
+.md-layout {
+  margin-bottom: 40px;
 }
 </style>
