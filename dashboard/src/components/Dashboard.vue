@@ -113,19 +113,6 @@ export default {
       })
       return obj
     },
-    sitemapValue: {
-      get: function() {
-        return Object.keys(sitemap)[0]
-      },
-      // I have no idea.
-      set: function(newVal) {
-        return newVal
-        console.log(newVal)
-        if (this.sitemapValue !== newVal) {
-          this.sitemapValue = newVal
-        }
-      }
-    },
     sitemapNodes: function() {
       let nodeTypes = sitemap[this.sitemapValue].nodeTypes
       let chartdata = {
