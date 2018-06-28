@@ -9,7 +9,6 @@ const extract = require('meta-extractor')
 
 let sitemap = new Sitemapper()
 let bar = new cliProgress.Bar({}, cliProgress.Presets.shades_classic)
-let file = './results/sitemaps.json'
 let log = console.log.bind(this)
 
 // Debugging
@@ -53,24 +52,19 @@ async function main(sitemapUrl, file) {
   // Print results
   await log(metaObj)
 
-  // Write results to json.
-  await jsonfile.writeFile(file, metaObj, err => console.error(err))
-
   // Update master list.
-  let masterFile = './results/sitemaps.json'
+  let masterFile = './results/sitemap-results.json'
   jsonfile.readFile(masterFile, (err, obj) => {
     if (err !== null) {
       if (err.code == 'ENOENT') {
-        jsonfile.writeFile(masterFile, { list: [key] }, err =>
+        jsonfile.writeFile(masterFile, { key: metaObj }, err =>
           console.error(err)
         )
-        console.log('Created new sitemap.json file.')
+        console.log('Created new sitemap-results.json file.')
       }
     } else {
-      if (!obj.list.includes(key)) {
-        obj.list.push(key)
-        jsonfile.writeFile(masterFile, obj, err => console.error(err))
-      }
+      obj[key] = metaObj
+      jsonfile.writeFile(masterFile, obj, err => console.error(err))
     }
   })
 }
@@ -168,7 +162,7 @@ var properties = [
 // Launch script.
 // Start capturing input - use CLI or prompt.
 if (process.argv[2]) {
-  main(process.argv[2], file)
+  main(process.argv[2])
 } else {
   prompt.start()
   prompt.get(properties, function(err, result) {
@@ -179,6 +173,6 @@ if (process.argv[2]) {
     // console.table(result)
 
     // Parse sitemap.
-    main(result.url, file)
+    main(result.url)
   })
 }
