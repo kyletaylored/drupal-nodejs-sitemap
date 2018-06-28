@@ -6,12 +6,8 @@ const jsonfile = require('jsonfile')
 const cliProgress = require('cli-progress')
 const url = require('url')
 const extract = require('meta-extractor')
-const PouchDB = require('pouchdb')
 
-// Assign database.
-PouchDB.plugin(require('pouchdb-adapter-node-websql'))
-let db = new PouchDB('database.db', { adapter: 'websql' })
-
+// Global variables.
 let sitemap = new Sitemapper()
 let bar = new cliProgress.Bar({}, cliProgress.Presets.shades_classic)
 let file = './results/sitemap-results.json'
@@ -48,7 +44,7 @@ async function main (sitemapUrl, file) {
 
   // Merge into single object.
   let metaObj = {
-    _id: path.hostname,
+    id: path.hostname,
     metadata: metadata,
     nodeTypes: nodeTypes,
     formTypes: formTypes,
@@ -59,26 +55,6 @@ async function main (sitemapUrl, file) {
 
   // Write results to json.
   await jsonfile.writeFile(file, metaObj, err => console.error(err))
-
-  // Write metaObj to PouchDB
-  db.put(metaObj)
-    .then(info => console.log(info))
-    .then(err => console.log(err))
-
-  // Create / update master list of sitemaps stored in db.
-  db.get('masterList')
-    .then(function (doc) {
-      console.log(doc)
-      doc.sitemaps.push(path.hostname)
-      db.put(doc)
-    })
-    .catch(function (err) {
-      console.log(err)
-      // Create the list.
-      if (err.name === 'not_found') {
-        db.put({ _id: 'masterList', sitemaps: [path.hostname] })
-      }
-    })
 }
 
 // Helper function for async processing in a for loop.

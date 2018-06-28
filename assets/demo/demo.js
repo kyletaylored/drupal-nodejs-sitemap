@@ -1,17 +1,4 @@
-let db = new PouchDB('database.db', { adapter: 'websql' })
-
-console.log(db.info().then(info => console.log(info)))
-// Create / update master list of sitemaps stored in db.
-console.log(db.adapter)
-db.get('masterList')
-  .then(function (doc) {
-    console.log(doc)
-  })
-  .catch(function (err) {
-    console.log(err)
-  })
-
-demo = {
+let demo = {
   initPickColor: function () {
     $('.pick-class-label').click(function () {
       var new_class = $(this).attr('new-class')
