@@ -1,17 +1,4 @@
-let sitemapDB = new PouchDB('sitemaps')
-
-// Create / update master list of sitemaps stored in db.
-console.log(sitemapDB.adapter)
-sitemapDB
-  .get('masterList')
-  .then(function (doc) {
-    console.log(doc)
-  })
-  .catch(function (err) {
-    console.log(err)
-  })
-
-demo = {
+let demo = {
   initPickColor: function () {
     $('.pick-class-label').click(function () {
       var new_class = $(this).attr('new-class')

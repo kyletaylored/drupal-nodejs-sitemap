@@ -7,10 +7,8 @@ const cliProgress = require('cli-progress')
 const url = require('url')
 const extract = require('meta-extractor')
 
-// Global variables.
 let sitemap = new Sitemapper()
 let bar = new cliProgress.Bar({}, cliProgress.Presets.shades_classic)
-let file = './results/sitemap-results.json'
 let log = console.log.bind(this)
 
 // Debugging
@@ -23,9 +21,10 @@ let statusCodes = {}
 let metadata = {}
 
 // Main function to run.
-async function main (sitemapUrl, file) {
+async function main(sitemapUrl, file) {
   // Use URL as part of JSON file name (in case running multiple scans.)
   let path = new URL(sitemapUrl)
+  let key = path.hostname
   file = 'results/' + path.hostname + '.json'
 
   // Get metadata.
@@ -44,21 +43,34 @@ async function main (sitemapUrl, file) {
 
   // Merge into single object.
   let metaObj = {
-    id: path.hostname,
     metadata: metadata,
     nodeTypes: nodeTypes,
     formTypes: formTypes,
     statusCodes: statusCodes
   }
 
+  // Print results
   await log(metaObj)
 
-  // Write results to json.
-  await jsonfile.writeFile(file, metaObj, err => console.error(err))
+  // Update master list.
+  let masterFile = './results/sitemap-results.json'
+  jsonfile.readFile(masterFile, (err, obj) => {
+    if (err !== null) {
+      if (err.code == 'ENOENT') {
+        jsonfile.writeFile(masterFile, { key: metaObj }, err =>
+          console.error(err)
+        )
+        console.log('Created new sitemap-results.json file.')
+      }
+    } else {
+      obj[key] = metaObj
+      jsonfile.writeFile(masterFile, obj, err => console.error(err))
+    }
+  })
 }
 
 // Helper function for async processing in a for loop.
-async function asyncForEach (array, callback) {
+async function asyncForEach(array, callback) {
   // let limit = loopLimit || array.length
   for (let index = 0; index < array.length; index++) {
     await callback(array[index], index, array)
@@ -66,7 +78,7 @@ async function asyncForEach (array, callback) {
 }
 
 // Process the URL in the sitemap, store results in docstore.
-async function processSitemapPage (uri) {
+async function processSitemapPage(uri) {
   await fetch(uri)
     .then(resp =>
       resp.text().then(body => {
@@ -93,7 +105,7 @@ async function processSitemapPage (uri) {
 /**
  * Extract node data.
  */
-async function extractNodeTypes (body, uri, docstore) {
+async function extractNodeTypes(body, uri, docstore) {
   let classes = await body.attr('class')
   for (let className of classes.split(' ')) {
     if (className.includes('node-type-')) {
@@ -106,7 +118,7 @@ async function extractNodeTypes (body, uri, docstore) {
 /**
  * Extract form data.
  */
-async function extractFormTypes (forms, uri, docstore) {
+async function extractFormTypes(forms, uri, docstore) {
   if (forms.length > 0) {
     for (var i = 0; i < forms.length; i++) {
       storeResults(docstore, forms[i].attribs.id, uri)
@@ -119,7 +131,7 @@ async function extractFormTypes (forms, uri, docstore) {
  * while we're processing each request. Keep an array of URLs attached to each
  * keyed ID or name.
  */
-function storeResults (docstore, name, uri) {
+function storeResults(docstore, name, uri) {
   // Init count and type.
   if (!docstore[name]) {
     docstore[name] = {
@@ -132,6 +144,12 @@ function storeResults (docstore, name, uri) {
   docstore[name].urls.push(uri)
 }
 
+// Report errors.
+function onErr(err) {
+  console.log(err)
+  return 1
+}
+
 // Create prompt input.
 var properties = [
   {
@@ -142,15 +160,19 @@ var properties = [
 ]
 
 // Launch script.
-// Start capturing input.
-prompt.start()
-prompt.get(properties, function (err, result) {
-  if (err) {
-    log(err)
-  }
-  // console.log('Command-line input received:')
-  // console.table(result)
+// Start capturing input - use CLI or prompt.
+if (process.argv[2]) {
+  main(process.argv[2])
+} else {
+  prompt.start()
+  prompt.get(properties, function(err, result) {
+    if (err) {
+      return onErr(err)
+    }
+    // console.log('Command-line input received:')
+    // console.table(result)
 
-  // Parse sitemap.
-  main(result.url, file)
-})
+    // Parse sitemap.
+    main(result.url)
+  })
+}

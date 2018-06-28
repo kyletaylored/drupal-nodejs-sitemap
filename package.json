@@ -20,7 +20,6 @@
     "jsonfile": "^4.0.0",
     "meta-extractor": "^1.4.0",
     "node-fetch": "^2.1.2",
-    "pouchdb": "^6.4.3",
     "prompt": "^1.0.0",
     "request": "^2.87.0",
     "sitemapper": "^2.1.13"
