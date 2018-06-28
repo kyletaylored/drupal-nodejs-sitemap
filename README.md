@@ -2,6 +2,8 @@
 
 This is a simple node.js script that will process a sitemap to extract content types and other information for research purposes.
 
+## Scraper
+
 All you need to do is install the node modules, then run the sitemap script.
 
 ```bash
@@ -72,4 +74,12 @@ The output will look similar to the following:
     }
   }
 }
+```
+
+## Dashboard
+
+To view the dashboard (currently in dev), go into the `/dashboard` directory and run:
+
+```bash
+npm run dev
 ```
