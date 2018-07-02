@@ -6,6 +6,7 @@ const jsonfile = require('jsonfile')
 const cliProgress = require('cli-progress')
 const url = require('url')
 const extract = require('meta-extractor')
+const lang = require('./scripts/lang.js')
 
 let sitemap = new Sitemapper()
 let bar = new cliProgress.Bar({}, cliProgress.Presets.shades_classic)
@@ -17,6 +18,7 @@ let log = console.log.bind(this)
 // Docstore.
 let nodeTypes = {}
 let formTypes = {}
+let langCodes = {}
 let statusCodes = {}
 let metadata = {}
 
@@ -46,7 +48,8 @@ async function main(sitemapUrl, file) {
     metadata: metadata,
     nodeTypes: nodeTypes,
     formTypes: formTypes,
-    statusCodes: statusCodes
+    statusCodes: statusCodes,
+    langCodes: langCodes
   }
 
   // Print results
@@ -86,8 +89,10 @@ async function processSitemapPage(uri) {
           // Parse the document body
           let $ = cheerio.load(body)
           // Extract from body.
+          let html = $('html')
           let htmlBody = $('body')
           let forms = $('form', htmlBody)
+          extractLanguage(html, uri, langCodes)
           extractNodeTypes(htmlBody, uri, nodeTypes)
           extractFormTypes(forms, uri, formTypes)
         } else {
@@ -123,6 +128,13 @@ async function extractFormTypes(forms, uri, docstore) {
     for (var i = 0; i < forms.length; i++) {
       storeResults(docstore, forms[i].attribs.id, uri)
     }
+  }
+}
+
+async function extractLanguage(html, uri, docstore) {
+  if (html.attr('lang')) {
+    let name = lang.getName(html.attr('lang'))
+    storeResults(docstore, name, uri)
   }
 }
 
