@@ -5,6 +5,7 @@ const fetch = require('node-fetch')
 const jsonfile = require('jsonfile')
 const cliProgress = require('cli-progress')
 const url = require('url')
+const URL = require('url').URL
 const extract = require('meta-extractor')
 const lang = require('./scripts/lang.js')
 
@@ -54,6 +55,9 @@ async function main(sitemapUrl, file) {
 
   // Print results
   await log(metaObj)
+
+  // Write to own file
+  await jsonfile.writeFile(file, metaObj, err => console.error(err))
 
   // Update master list.
   let masterFile = './results/sitemap-results.json'
