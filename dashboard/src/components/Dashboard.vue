@@ -11,10 +11,10 @@
         </md-toolbar>
 
         <div class="md-layout md-gutter">
-            <div class="md-layout-item md-small-size-100">
+            <div class="md-layout-item">
               <md-field>
               <label for="sitemap">Sitemap</label>
-              <md-select v-model="sitemapValue" name="sitemap" id="sitemap">
+              <md-select v-model="sitemapValue" name="sitemap" id="sitemap" v-on:change="updateSitemap">
                 <md-option v-for="option in sitemapOptions" v-bind:key="option.name" v-bind:value="option.name">
                   {{ option.name }}
                 </md-option>
@@ -91,15 +91,24 @@ export default {
   extends: Bar,
   props: {},
   data() {
-    return {}
+    return {
+      sitemapValue: Object.keys(sitemap)[0]
+      // sitemapOptions: { 0: { name: 'No results, please run scraper.' } }
+    }
   },
   methods: {
-    createChart(chartId, chartData) {
+    createChart: function(chartId, chartData) {
       const ctx = document.getElementById(chartId)
       const myChart = new Chart(ctx, {
         type: chartData.type,
         data: chartData.data
         // options: chartData.options
+      })
+    },
+    updateSitemap: function() {
+      console.log('WORK')
+      this.$nextTick(function() {
+        console.log('tick ', this) // => 'updated'
       })
     }
   },
@@ -114,6 +123,9 @@ export default {
       return obj
     },
     sitemapNodes: function() {
+      if (!this.sitemapValue) {
+        return null
+      }
       let nodeTypes = sitemap[this.sitemapValue].nodeTypes
       let chartdata = {
         type: 'bar',
@@ -130,10 +142,12 @@ export default {
           ]
         }
       }
-      console.log(nodeTypes)
       return chartdata
     },
     sitemapForms: function() {
+      if (!this.sitemapValue) {
+        return null
+      }
       let formTypes = sitemap[this.sitemapValue].formTypes
       let chartdata = {
         type: 'bar',
@@ -167,6 +181,9 @@ export default {
       return chartdata
     },
     sitemapStatus: function() {
+      if (!this.sitemapValue) {
+        return null
+      }
       let statusCodes = sitemap[this.sitemapValue].statusCodes
       let chartdata = {
         type: 'bar',
@@ -200,6 +217,9 @@ export default {
       return chartdata
     },
     sitemapNodeUrls: function() {
+      if (!this.sitemapValue) {
+        return [{ type: 'empty', url: 'empty' }]
+      }
       let nodeTypes = sitemap[this.sitemapValue].nodeTypes
       let arr = []
       Object.keys(nodeTypes).forEach(function(el, index) {
@@ -211,14 +231,19 @@ export default {
       return arr
     },
     sitemapMeta: function() {
-      let meta = this.sitemapValue
-      return sitemap[this.sitemapValue].metadata.title
+      if (this.sitemapValue) {
+        return sitemap[this.sitemapValue].metadata.title
+      } else {
+        return 'Drupal Content'
+      }
     }
   },
   mounted() {
-    this.createChart('nodeChart', this.sitemapNodes)
-    this.createChart('formChart', this.sitemapForms)
-    this.createChart('statusChart', this.sitemapStatus)
+    if (this.sitemapValue) {
+      this.createChart('nodeChart', this.sitemapNodes)
+      this.createChart('formChart', this.sitemapForms)
+      this.createChart('statusChart', this.sitemapStatus)
+    }
   },
   metaInfo: {
     title: 'Drupal Content Audit'
