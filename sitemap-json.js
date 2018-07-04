@@ -22,6 +22,12 @@ let formTypes = {}
 let langCodes = {}
 let statusCodes = {}
 let metadata = {}
+let headers = {
+  responseTimes: {
+    values: []
+  }
+}
+let loopCount = 0
 
 // Main function to run.
 async function main(sitemapUrl, file) {
@@ -44,13 +50,22 @@ async function main(sitemapUrl, file) {
   // Kill progress bar.
   await bar.stop()
 
+  // Process math for response times, merge in.
+  let respObj = {
+    average: headers.responseTimes.values.average(),
+    min: headers.responseTimes.values.min(),
+    max: headers.responseTimes.values.max()
+  }
+  headers.responseTimes = Object.assign(respObj, headers.responseTimes)
+
   // Merge into single object.
   let metaObj = {
     metadata: metadata,
     nodeTypes: nodeTypes,
     formTypes: formTypes,
     statusCodes: statusCodes,
-    langCodes: langCodes
+    langCodes: langCodes,
+    headers: headers
   }
 
   // Print results
@@ -86,10 +101,23 @@ async function asyncForEach(array, callback) {
 
 // Process the URL in the sitemap, store results in docstore.
 async function processSitemapPage(uri) {
+  let startTime = new Date().getTime()
   await fetch(uri)
-    .then(resp =>
+    .then(resp => {
+      let endTime = new Date().getTime()
       resp.text().then(body => {
         if (resp.status === 200 && body) {
+          // Store headers for first request.
+          if (loopCount < 1) {
+            resp.headers.forEach(function(value, name) {
+              headers[name] = value
+            })
+            loopCount++
+          }
+
+          // Capture response time.
+          headers.responseTimes.values.push(endTime - startTime)
+
           // Parse the document body
           let $ = cheerio.load(body)
           // Extract from body.
@@ -104,7 +132,7 @@ async function processSitemapPage(uri) {
           storeResults(statusCodes, resp.status, uri)
         }
       })
-    )
+    })
     .catch(err => console.log(err))
 
   // Update the current value of progress by 1, even if request fails.
@@ -158,6 +186,17 @@ function storeResults(docstore, name, uri) {
 
   docstore[name].count = docstore[name].count + 1
   docstore[name].urls.push(uri)
+}
+
+// Add calculation functions to Array prototype
+Array.prototype.average = function() {
+  return (this.reduce((sume, el) => sume + el, 0) / this.length).toFixed(2)
+}
+Array.prototype.max = function() {
+  return this.reduce((a, b) => Math.max(a, b))
+}
+Array.prototype.min = function() {
+  return this.reduce((a, b) => Math.min(a, b))
 }
 
 // Report errors.
