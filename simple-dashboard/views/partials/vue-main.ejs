@@ -1,62 +1,119 @@
 <script type="text/javascript">
 
-  const app = new Vue({
-    el: '#app',
-    data: {
-      sitemapValue: {name: "Choose a sitemap"},
-      sitemapOptions: [{
-        name: "Choose a sitemap"
-      }],
-      pageViews: 13400,
-      contentTypes: 30,
-      formTypes: 15,
-      statusCodes: 3,
-      languages: 1
-    },
-    created () {
-      fetch('/results').then(resp => resp.json()).then(json => {
-        let obj = {}
-        for (var i = 0; i < json.length; i++) {
-          obj[i] = {
-            name: json[i]
-          }
-        }
-        this.sitemapOptions = obj
-        this.sitemapValue = obj[0]
-      })
-    },
-    methods: {
-      createChart(id, data, options) {
-        let defaultData = google.visualization.arrayToDataTable([
-          ['City', '2010 Population', '2000 Population'],
-          ['New York City, NY', 8175000, 8008000],
-          ['Los Angeles, CA', 3792000, 3694000],
-          ['Chicago, IL', 2695000, 2896000],
-          ['Houston, TX', 2099000, 1953000],
-          ['Philadelphia, PA', 1526000, 1517000]
-        ])
+// Initialize Google charts
+google.charts.load('current');
 
-        var data = google.visualization.arrayToDataTable(data) || defaultData;
+//--------- BEGIN SELECT -------------------
+let main = new Vue({
+  el: '#sidebar-form',
+  data: {
+    selected: 'example.com',
+    options: ['example.com'],
+    results: {},
+    sitename: ''
+  },
+  created () {
+    let site = {}
+    fetch('/results').then(resp => resp.json()).then(json => {
+      let arr = []
+      for (var i = 0; i < json.length; i++) {
+        arr.push(json[i])
+      }
+      this.options = arr
+      this.selected = arr[0]
+    })
+  },
+  computed: {
 
-        var options = options || {
-          title: 'Population of Largest U.S. Cities',
-          chartArea: {width: '50%'},
-          hAxis: {
-            title: 'Total Population',
-            minValue: 0
-          },
-          vAxis: {
-            title: 'City'
-          }
-        };
-        var chart = new google.visualization.BarChart(document.getElementById(id));
-        chart.draw(data, options);
-      },
+  },
+  methods: {
+    updateModels: function() {
+      // panelOverview.$data.pages =
+      this.sitemapDb(this.selected).then(function(){
+        console.log(this.results);
+      });
     },
-    mounted () {
-      google.charts.load('current', {packages: ['corechart', 'bar']});
-      google.charts.setOnLoadCallback(this.createChart());
+    sitemapDb: async function(id) {
+      if (this.options.includes(id)) {
+        fetch('/results/' + id).then(resp => resp.json()).then(json => {
+          console.log(json);
+          this.results = json
+          panelOverview.pages = json.metadata.ogSiteName
+        }).catch(err => console.log(err))
+      } else {
+        return null
+      }
+    },
+    drawChart: function(data, options, id, chartType = 'ColumnChart') {
+      let wrapper = new google.visualization.ChartWrapper({
+          chartType: chartType,
+          dataTable: data,
+          options: options,
+          containerId: 'vis_div'
+        });
+        wrapper.draw();
+      }
     }
-  });
+  }
+});
+//------------ END SELECT ----------------
+
+let panelOverview = new Vue({
+  el: "#panel-overview",
+  data: {
+    pages: "butt",
+  },
+  methods: {
+
+  },
+  computed: {
+    sitemapOptions: function() {
+      let obj = {}
+      Object.keys(sitemap).forEach((el, index) => {
+        obj[index] = {
+          name: el
+        }
+      })
+      return obj
+    },
+    sitemapNodeUrls: function() {
+      if (!this.sitemapValue) {
+        return [{ type: 'empty', url: 'empty' }]
+      }
+      let nodeTypes = sitemap[this.sitemapValue].nodeTypes
+      let arr = []
+      Object.keys(nodeTypes).forEach(function(el, index) {
+        nodeTypes[el].urls.forEach(function(e, i) {
+          arr.push({ type: el, url: e })
+        })
+      })
+
+      return arr
+    },
+    sitemapMeta: function() {
+      if (this.sitemapValue) {
+        return sitemap[this.sitemapValue].metadata.title
+      } else {
+        return 'Drupal Content'
+      }
+    }
+  },
+  mounted() {
+    if (this.sitemapValue) {
+      this.createChart('nodeChart', this.sitemapNodes)
+      this.createChart('formChart', this.sitemapForms)
+      this.createChart('statusChart', this.sitemapStatus)
+    }
+  },
+  metaInfo: {
+    title: 'Drupal Content Audit'
+  }
+});
+
+
+// Global name as `VirtualScrollList`
+Vue.component('virtual-list', VirtualScrollList);
+
+
 
 </script>
