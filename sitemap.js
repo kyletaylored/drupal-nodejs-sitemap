@@ -5,11 +5,12 @@ const fetch = require('node-fetch')
 const jsonfile = require('jsonfile')
 const cliProgress = require('cli-progress')
 const url = require('url')
+const URL = require('url').URL
 const extract = require('meta-extractor')
+const lang = require('./scripts/lang.js')
 
 let sitemap = new Sitemapper()
 let bar = new cliProgress.Bar({}, cliProgress.Presets.shades_classic)
-let file = './results/sitemaps.json'
 let log = console.log.bind(this)
 
 // Debugging
@@ -18,8 +19,15 @@ let log = console.log.bind(this)
 // Docstore.
 let nodeTypes = {}
 let formTypes = {}
+let langCodes = {}
 let statusCodes = {}
 let metadata = {}
+let headers = {
+  responseTimes: {
+    values: []
+  }
+}
+let loopCount = 0
 
 // Main function to run.
 async function main(sitemapUrl, file) {
@@ -34,6 +42,7 @@ async function main(sitemapUrl, file) {
   try {
     let sites = await sitemap.fetch(sitemapUrl)
     bar.start(sites.sites.length, 0)
+    metadata['pageCount'] = sites.sites.length
     await asyncForEach(sites.sites, async uri => processSitemapPage(uri))
   } catch (err) {
     console.log('Err: ', err)
@@ -42,12 +51,22 @@ async function main(sitemapUrl, file) {
   // Kill progress bar.
   await bar.stop()
 
+  // Process math for response times, merge in.
+  let respObj = {
+    average: headers.responseTimes.values.average(),
+    min: headers.responseTimes.values.min(),
+    max: headers.responseTimes.values.max()
+  }
+  headers.responseTimes = Object.assign(respObj, headers.responseTimes)
+
   // Merge into single object.
   let metaObj = {
     metadata: metadata,
     nodeTypes: nodeTypes,
     formTypes: formTypes,
-    statusCodes: statusCodes
+    statusCodes: statusCodes,
+    langCodes: langCodes,
+    headers: headers
   }
 
   // Print results
@@ -85,15 +104,30 @@ async function asyncForEach(array, callback) {
 
 // Process the URL in the sitemap, store results in docstore.
 async function processSitemapPage(uri) {
+  let startTime = new Date().getTime()
   await fetch(uri)
-    .then(resp =>
+    .then(resp => {
+      let endTime = new Date().getTime()
       resp.text().then(body => {
         if (resp.status === 200 && body) {
+          // Store headers for first request.
+          if (loopCount < 1) {
+            resp.headers.forEach(function(value, name) {
+              headers[name] = value
+            })
+            loopCount++
+          }
+
+          // Capture response time.
+          headers.responseTimes.values.push(endTime - startTime)
+
           // Parse the document body
           let $ = cheerio.load(body)
           // Extract from body.
+          let html = $('html')
           let htmlBody = $('body')
           let forms = $('form', htmlBody)
+          extractLanguage(html, uri, langCodes)
           extractNodeTypes(htmlBody, uri, nodeTypes)
           extractFormTypes(forms, uri, formTypes)
         } else {
@@ -101,7 +135,7 @@ async function processSitemapPage(uri) {
           storeResults(statusCodes, resp.status, uri)
         }
       })
-    )
+    })
     .catch(err => console.log(err))
 
   // Update the current value of progress by 1, even if request fails.
@@ -132,6 +166,13 @@ async function extractFormTypes(forms, uri, docstore) {
   }
 }
 
+async function extractLanguage(html, uri, docstore) {
+  if (html.attr('lang')) {
+    let name = lang.getName(html.attr('lang'))
+    storeResults(docstore, name, uri)
+  }
+}
+
 /**
  * Create a section in the larger doctore object to keep node and form data
  * while we're processing each request. Keep an array of URLs attached to each
@@ -148,6 +189,17 @@ function storeResults(docstore, name, uri) {
 
   docstore[name].count = docstore[name].count + 1
   docstore[name].urls.push(uri)
+}
+
+// Add calculation functions to Array prototype
+Array.prototype.average = function() {
+  return (this.reduce((sume, el) => sume + el, 0) / this.length).toFixed(2)
+}
+Array.prototype.max = function() {
+  return this.reduce((a, b) => Math.max(a, b))
+}
+Array.prototype.min = function() {
+  return this.reduce((a, b) => Math.min(a, b))
 }
 
 // Report errors.
@@ -168,7 +220,7 @@ var properties = [
 // Launch script.
 // Start capturing input - use CLI or prompt.
 if (process.argv[2]) {
-  main(process.argv[2], file)
+  main(process.argv[2])
 } else {
   prompt.start()
   prompt.get(properties, function(err, result) {
@@ -179,6 +231,6 @@ if (process.argv[2]) {
     // console.table(result)
 
     // Parse sitemap.
-    main(result.url, file)
+    main(result.url)
   })
 }
