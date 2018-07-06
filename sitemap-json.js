@@ -42,6 +42,7 @@ async function main(sitemapUrl, file) {
   try {
     let sites = await sitemap.fetch(sitemapUrl)
     bar.start(sites.sites.length, 0)
+    metadata['pageCount'] = sites.sites.length
     await asyncForEach(sites.sites, async uri => processSitemapPage(uri))
   } catch (err) {
     console.log('Err: ', err)
