@@ -5,7 +5,7 @@
   "main": "sitemap.js",
   "scripts": {
     "pretest": "eslint index.js --fix",
-    "crawl": "node sitemap.js"
+    "postinstall": "cd dashboard && npm install"
   },
   "keywords": [
     "drupal",
