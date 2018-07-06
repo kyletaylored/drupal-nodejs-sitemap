@@ -15,7 +15,6 @@
   "author": "Kyle Taylor",
   "license": "ISC",
   "dependencies": {
-    "bower": "^1.8.4",
     "cheerio": "^1.0.0-rc.2",
     "cli-progress": "^2.0.0",
     "jsonfile": "^4.0.0",
