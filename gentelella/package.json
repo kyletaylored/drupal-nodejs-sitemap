@@ -1,0 +1,56 @@
+{
+  "name": "gentelella",
+  "version": "1.4.0",
+  "description": "Gentelella Admin is a free to use Bootstrap admin template",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "opn http://localhost:3002 && gulp"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/puikinsh/gentelella.git"
+  },
+  "keywords": [
+    "css",
+    "js",
+    "html",
+    "template",
+    "admin",
+    "bootstrap",
+    "theme",
+    "backend",
+    "responsive"
+  ],
+  "author": "Aigars Silkalns",
+  "contributors": [
+    "Christian Esperar"
+  ],
+  "license": "MIT",
+  "main": "build/js/custom.min.js",
+  "bugs": {
+    "url": "https://github.com/puikinsh/gentelella/issues"
+  },
+  "homepage": "https://github.com/puikinsh/gentelella#readme",
+  "devDependencies": {
+    "browser-sync": "^2.12.10",
+    "gulp": "^3.9.1",
+    "gulp-autoprefixer": "^3.1.0",
+    "gulp-concat": "^2.6.0",
+    "gulp-rename": "^1.2.2",
+    "gulp-ruby-sass": "^2.0.6",
+    "gulp-uglify": "^1.5.3"
+  },
+  "dependencies": {
+    "body-parser": "^1.18.3",
+    "ejs": "^2.6.1",
+    "express": "^4.16.3",
+    "express-alias": "^0.4.0",
+    "gulp-live-server": "0.0.31",
+    "http": "0.0.0",
+    "jsonfile": "^4.0.0",
+    "morgan": "^1.9.0",
+    "opn-cli": "^3.1.0",
+    "path": "^0.12.7",
+    "reload": "^2.3.0"
+  }
+}

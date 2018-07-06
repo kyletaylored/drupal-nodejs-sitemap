@@ -23,54 +23,103 @@ The output will look similar to the following:
 
 ```json
 {
+  "metadata": {
+    "host": "www.example.com",
+    "path": "/",
+    "title": "Example website description.",
+    "charset": "utf-8",
+    "feeds": []
+  },
   "nodeTypes": {
-    "site-page": {
-      "count": 1254,
-      "urls": [Array]
-    },
     "press-release": {
-      "count": 5224,
-      "urls": [Array]
+      "count": 889,
+      "urls": ["Array"]
     },
-    "webform": {
-      "count": 38,
-      "urls": [Array]
+    "gallery": {
+      "count": 764,
+      "urls": ["Array"]
     },
-    "job-posting": {
-      "count": 42,
-      "urls": [Array]
+    "video": {
+      "count": 977,
+      "urls": ["Array"]
+    },
+    "publication": {
+      "count": 1812,
+      "urls": ["Array"]
+    },
+    "country": {
+      "count": 85,
+      "urls": ["Array"]
+    },
+    "article": {
+      "count": 6318,
+      "urls": ["Array"]
+    },
+    "page": {
+      "count": 1362,
+      "urls": ["Array"]
     }
   },
   "formTypes": {
-    "publication": {
+    "mc-embedded-subscribe-form": {
+      "count": 7,
+      "urls": ["Array"]
+    },
+    "search-block-form": {
       "count": 4,
-      "urls": [Array]
+      "urls": ["Array"]
     },
-    "webform-client-form-34560": {
+    "webform-client-form-16622": {
       "count": 1,
-      "urls": [Array]
+      "urls": ["Array"]
     },
-    "searchForm": {
-      "count": 2,
-      "urls": [Array]
-    },
-    "undefined": {
-      "count": 3,
-      "urls": [Array]
-    },
-    "webform-client-form-47196": {
+    "newsletter": {
       "count": 1,
-      "urls": [Array]
+      "urls": ["Array"]
     }
   },
   "statusCodes": {
     "403": {
-      "count": 711,
-      "urls": [Array]
+      "count": 1235,
+      "urls": ["Array"]
     },
     "404": {
-      "count": 757,
-      "urls": [Array]
+      "count": 4,
+      "urls": ["Array"]
+    }
+  },
+  "langCodes": {
+    "Vietnamese": {
+      "count": 139,
+      "urls": ["Array"]
+    },
+    "English": {
+      "count": 205,
+      "urls": ["Array"]
+    },
+    "Serbian": {
+      "count": 1,
+      "urls": ["Array"]
+    },
+    "Albanian": {
+      "count": 233,
+      "urls": ["Array"]
+    },
+    "Romanian": {
+      "count": 1,
+      "urls": ["Array"]
+    },
+    "Portuguese": {
+      "count": 1,
+      "urls": ["Array"]
+    },
+    "Mongolian": {
+      "count": 4,
+      "urls": ["Array"]
+    },
+    "Khmer": {
+      "count": 14,
+      "urls": ["Array"]
     }
   }
 }

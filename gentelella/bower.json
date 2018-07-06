@@ -1,0 +1,44 @@
+{
+  "name": "gentelella",
+  "homepage": "https://colorlib.com/polygon/gentelella/index.html",
+  "authors": ["Aigars Silkalns", "Christian Esperar"],
+  "description": "Gentelella Admin is a free to use Bootstrap admin template",
+  "keywords": [
+    "css",
+    "js",
+    "html",
+    "template",
+    "admin",
+    "bootstrap",
+    "theme",
+    "backend",
+    "responsive"
+  ],
+  "license": "MIT",
+  "ignore": ["**/.*", "documentation"],
+  "devDependencies": {
+    "jquery": "^2.2.3",
+    "bootstrap": "^3.3.7",
+    "font-awesome": "fontawesome#^4.6.1",
+    "Chart.js": "^2.0.2",
+    "autosize": "^3.0.15",
+    "datatables.net": "^1.10.11",
+    "datatables.net-bs": "^1.10.11",
+    "datatables.net-buttons": "^1.1.2",
+    "datatables.net-buttons-bs": "^1.1.2",
+    "datatables.net-fixedheader": "^3.1.1",
+    "datatables.net-fixedheader-bs": "^3.1.1",
+    "datatables.net-keytable": "^2.1.1",
+    "datatables.net-responsive": "^2.0.2",
+    "datatables.net-responsive-bs": "^2.0.2",
+    "datatables.net-scroller": "^1.4.1",
+    "datatables.net-scroller-bs": "^1.4.1",
+    "pdfmake": "^0.1.20",
+    "jszip": "Stuk/jszip#v2.6.0",
+    "animate.css": "^3.5.1",
+    "DateJS": "^1.0.0-rc3"
+  },
+  "resolutions": {
+    "jquery": "^2.2.3"
+  }
+}

@@ -1,0 +1,14 @@
+<form id="sidebar-form" class="">
+  <div class="input-group" style="padding: 15px 15px 0;">
+    <select v-model="selected" @change="updateModels">
+      <option v-for="site in options">{{ site }}</option>
+    </select>
+  </div>
+</form>
+
+<style media="screen">
+  select {
+    -moz-appearance: menulist;
+    -webkit-appearance: menulist;
+  }
+</style>
