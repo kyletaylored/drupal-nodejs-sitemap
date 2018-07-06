@@ -26,7 +26,7 @@ app.get('/results', function(req, res) {
 app.get('/results/:id', function(req, res) {
   let fileName = '../results/' + req.params.id + '.json'
   jsonFile.readFile(fileName, function(err, jsonData) {
-    if (err) throw err
+    if (err) res.send(err)
     res.send(jsonData)
   })
   // res.send(results[req.params.id])
