@@ -124,19 +124,37 @@ var updateData = {
               case 'nodeTypes':
                 self.newChart(
                   'overview_content_types',
+                  'Overview of content types',
                   'Content Types',
                   data[d]
                 )
                 self.createTable('content_table', 'Content Type', data[d])
                 break
               case 'formTypes':
-                self.newChart('overview_form', 'Forms', data[d])
+                self.newChart(
+                  'overview_form',
+                  'Overview of forms',
+                  'Forms',
+                  data[d]
+                )
                 break
               case 'langCodes':
-                self.newChart('overview_lang', 'Languages', data[d])
+                self.newChart(
+                  'overview_lang',
+                  'Overview of languages',
+                  'Languages',
+                  data[d],
+                  'line'
+                )
                 break
               case 'statusCodes':
-                self.newChart('overview_status', 'Status codes', data[d])
+                self.newChart(
+                  'overview_status',
+                  'Overview of status codes',
+                  'Status codes',
+                  data[d],
+                  'pie'
+                )
                 break
               default:
             }
@@ -158,7 +176,7 @@ var updateData = {
     for (var ct in data) {
       if (data.hasOwnProperty(ct)) {
         data[ct].urls.forEach(url => {
-          dataset.push([ct, `<a href="${url}">${url}</a>`])
+          dataset.push([ct, `<a target="_blank" href="${url}">${url}</a>`])
         })
       }
     }
@@ -176,7 +194,7 @@ var updateData = {
       })
     }
   },
-  newChart: function(id, label, types) {
+  newChart: function(id, title, label, types, chart) {
     let data = {
       labels: Object.keys(types),
       datasets: [
@@ -189,16 +207,30 @@ var updateData = {
         }
       ]
     }
-    this.createChart(id, data, 'bar')
+    this.createChart(id, title, data, chart)
   },
-  createChart: function(id, data, type) {
+  createChart: function(id, title, data, type) {
     if ($('#' + id).length) {
       let ctx = document.getElementById(id)
       let mybarChart = new Chart(ctx, {
         type: type || 'bar',
         data: data,
         options: {
+          legend: { display: true },
+          title: {
+            display: true,
+            text: title
+          },
           scales: {
+            xAxes: [
+              {
+                ticks: {
+                  callback: function(value) {
+                    return value.substr(0, 10) // truncate
+                  }
+                }
+              }
+            ],
             yAxes: [
               {
                 ticks: {
