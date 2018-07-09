@@ -147,8 +147,7 @@ var updateData = {
                   'overview_lang',
                   'Overview of languages',
                   'Languages',
-                  data[d],
-                  'line'
+                  data[d]
                 )
                 break
               case 'statusCodes':
