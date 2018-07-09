@@ -106,8 +106,9 @@ async function processSitemapPage(uri) {
   await fetch(uri)
     .then(resp => {
       let endTime = new Date().getTime()
+
       resp.text().then(body => {
-        if (resp.status === 200 && body) {
+        if (resp.status === 200 && body && !resp.redirected) {
           // Store headers for first request.
           if (loopCount < 1) {
             resp.headers.forEach(function(value, name) {
@@ -129,8 +130,17 @@ async function processSitemapPage(uri) {
           extractNodeTypes(htmlBody, uri, nodeTypes)
           extractFormTypes(forms, uri, formTypes)
         } else {
-          // If response fails, store that record.
-          storeResults(statusCodes, resp.status, uri)
+          if (resp.redirected) {
+            let redCodes = {
+              follow: '301 / 302',
+              error: '500',
+              manual: 'manual'
+            }
+            storeResults(statusCodes, redCodes[resp.redirected], uri)
+          } else {
+            // If response fails, store that record.
+            storeResults(statusCodes, resp.status, uri)
+          }
         }
       })
     })
@@ -145,11 +155,15 @@ async function processSitemapPage(uri) {
  */
 async function extractNodeTypes(body, uri, docstore) {
   let classes = await body.attr('class')
-  for (let className of classes.split(' ')) {
-    if (className.includes('node-type-')) {
-      storeResults(docstore, className.substr(10), uri)
-      break
+  if (classes) {
+    for (let className of classes.split(' ')) {
+      if (className.includes('node-type-')) {
+        storeResults(docstore, className.substr(10), uri)
+        break
+      }
     }
+  } else {
+    storeResults(docstore, 'NO BODY CLASSES', uri)
   }
 }
 
