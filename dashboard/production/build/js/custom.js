@@ -141,6 +141,8 @@ var updateData = {
                   'Forms',
                   data[d]
                 )
+                self.createDataTable('forms_table', 'Forms', data[d])
+                self.createTable('forms_sample', self.getSummary(data[d]))
                 break
               case 'langCodes':
                 self.newChart(
@@ -190,7 +192,7 @@ var updateData = {
         summary[value] = {
           Name: value,
           Count: data[value].count,
-          'Sample URL': data[value].urls[0]
+          'Sample URL': data[value].urls[data[value].urls.length - 1]
         }
       }
     }
@@ -255,7 +257,10 @@ var updateData = {
       }
     }
 
-    $('#' + id).append(thead, tbody)
+    // Clear out old data, then append new data.
+    $('#' + id)
+      .html(null)
+      .append(thead, tbody)
   },
   newChart: function(id, title, label, types, chart) {
     let data = {
