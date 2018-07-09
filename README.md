@@ -2,7 +2,7 @@
 
 This is a simple node.js script that will process a sitemap to extract content types and other information for research purposes.
 
-<iframe width="630" height="394" src="https://www.useloom.com/embed/1b0335cf171a4240839682ccd3fab4fa" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen></iframe>
+[Demo video](https://www.useloom.com/embed/1b0335cf171a4240839682ccd3fab4fa){:target="_blank"}
 
 ## Scraper
 
