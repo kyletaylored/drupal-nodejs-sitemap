@@ -1927,7 +1927,7 @@ span.right {
 .dashboard_graph {
   background: #fff;
   padding: 7px 10px;
-  overflow: auto;
+  overflow: hidden;
 }
 
 .dashboard_graph .col-md-9,
