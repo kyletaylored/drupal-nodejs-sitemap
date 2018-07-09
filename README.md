@@ -129,8 +129,9 @@ The output will look similar to the following:
 
 ## Dashboard
 
-To view the dashboard (currently in dev), go into the `/dashboard` directory and run:
+To view the dashboard (currently in dev), run the following and visit [localhost:3002](http://localhost:3002):
 
 ```bash
-npm run dev
+cd dashboard
+node app.js
 ```
