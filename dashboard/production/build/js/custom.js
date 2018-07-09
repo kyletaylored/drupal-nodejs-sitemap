@@ -202,7 +202,8 @@ var updateData = {
     for (var ct in data) {
       if (data.hasOwnProperty(ct)) {
         data[ct].urls.forEach(url => {
-          dataset.push([ct, `<a target="_blank" href="${url}">${url}</a>`])
+          let link = '<a target="_blank" href="' + url + '">' + url + '</a>'
+          dataset.push([ct, link])
         })
       }
     }
@@ -314,19 +315,6 @@ $(document).ready(function() {
     container: 'body'
   })
 
-  // Update panel hash and open to panel.
-  var hash = window.location.hash
-  hash && $('ul.nav a[href="' + hash + '"]').tab('show')
-  $('.panel-nav a').click(function(e) {
-    $(this).tab('show')
-    var scrollmem = $('body').scrollTop()
-    window.location.hash = this.hash
-    // $('html,body').scrollTop(scrollmem)
-  })
-  $('.panel-nav a[data-toggle="tab"]').on('shown.bs.tab', function(e) {
-    window.location.hash = e.target.hash
-  })
-
   // Why not.
   updateData.getData()
 
@@ -357,5 +345,10 @@ $(document).ready(function() {
 
     // Add update chart function.
     updateData.getData()
+  })
+
+  // Update panel hash and open to panel.
+  $('.panel-nav a[data-toggle="tab"]').on('shown.bs.tab', function(e) {
+    window.location.hash = e.target.hash
   })
 })
