@@ -128,7 +128,11 @@ var updateData = {
                   'Content Types',
                   data[d]
                 )
-                self.createTable('content_table', 'Content Type', data[d])
+                self.createDataTable('content_table', 'Content Type', data[d])
+                self.createTable(
+                  'content_types_sample',
+                  self.getSummary(data[d])
+                )
                 break
               case 'formTypes':
                 self.newChart(
@@ -164,14 +168,36 @@ var updateData = {
     }
   },
   updateMeta: function(data) {
-    $('#page_count').text(data.metadata.pageCount)
-    $('#avg_time').text(data.headers.responseTimes.average)
-    $('#total_ct').text(Object.keys(data.nodeTypes).length)
-    $('#total_forms').text(Object.keys(data.formTypes).length)
-    $('#total_languages').text(Object.keys(data.langCodes).length)
-    $('#total_errors').text(Object.keys(data.statusCodes).length)
+    let meta = {
+      page_count: data.metadata.pageCount,
+      avg_time: data.headers.responseTimes.average,
+      total_ct: Object.keys(data.nodeTypes).length,
+      total_forms: Object.keys(data.formTypes).length,
+      total_languages: Object.keys(data.langCodes).length,
+      total_errors: Object.keys(data.statusCodes).length
+    }
+
+    // Loop through object.
+    for (var value in meta) {
+      if (meta.hasOwnProperty(value)) {
+        $('#' + value).text(meta[value])
+      }
+    }
   },
-  createTable: function(id, title, data) {
+  getSummary: function(data) {
+    let summary = {}
+    for (var value in data) {
+      if (data.hasOwnProperty(value)) {
+        summary[value] = {
+          Name: value,
+          Count: data[value].count,
+          'Sample URL': data[value].urls[0]
+        }
+      }
+    }
+    return summary
+  },
+  createDataTable: function(id, title, data) {
     let dataset = []
     for (var ct in data) {
       if (data.hasOwnProperty(ct)) {
@@ -193,6 +219,43 @@ var updateData = {
         columns: [{ title: title }, { title: 'URL' }]
       })
     }
+  },
+  createTable: function(id, data) {
+    // Create headers and rows
+    let thead = $('<thead/>')
+    let tbody = $('<tbody/>')
+    let count = 0
+    for (var value in data) {
+      if (data.hasOwnProperty(value)) {
+        let row = $('<tr/>').attr('scope', 'row')
+
+        // Loop through each subobject
+        for (var d in data[value]) {
+          if (data[value].hasOwnProperty(d)) {
+            if (count === 0) {
+              let th = $('<th/>').html(d)
+              if (d !== 'Sample URL') {
+                th.attr('width', '20%')
+              }
+              thead.append(th)
+            }
+            let cell = $('<td/>').html(data[value][d])
+            if (d !== 'Sample URL') {
+              cell.attr('width', '20%')
+            } else {
+              cell.wrapInner(
+                "<a target='_blank' href='" + data[value][d] + "'/>"
+              )
+            }
+            row.append(cell)
+          }
+        }
+        count++
+        $(tbody).append(row)
+      }
+    }
+
+    $('#' + id).append(thead, tbody)
   },
   newChart: function(id, title, label, types, chart) {
     let data = {
@@ -249,6 +312,19 @@ var updateData = {
 $(document).ready(function() {
   $('[data-toggle="tooltip"]').tooltip({
     container: 'body'
+  })
+
+  // Update panel hash and open to panel.
+  var hash = window.location.hash
+  hash && $('ul.nav a[href="' + hash + '"]').tab('show')
+  $('.panel-nav a').click(function(e) {
+    $(this).tab('show')
+    var scrollmem = $('body').scrollTop()
+    window.location.hash = this.hash
+    // $('html,body').scrollTop(scrollmem)
+  })
+  $('.panel-nav a[data-toggle="tab"]').on('shown.bs.tab', function(e) {
+    window.location.hash = e.target.hash
   })
 
   // Why not.
