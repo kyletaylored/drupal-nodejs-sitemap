@@ -120,7 +120,7 @@ var updateData = {
 
         for (var d in data) {
           if (data.hasOwnProperty(d)) {
-            data[d] = self.sortObject(data[d])
+            data[d] = self.sortObjectByCount(data[d])
             switch (d) {
               case 'nodeTypes':
                 self.newChart(
@@ -132,7 +132,7 @@ var updateData = {
                 self.createDataTable('content_table', 'Content Type', data[d])
                 self.createTable(
                   'content_types_sample',
-                  self.getSummary(data[d])
+                  self.getSummary(self.sortObject(data[d]))
                 )
                 break
               case 'formTypes':
@@ -143,7 +143,10 @@ var updateData = {
                   data[d]
                 )
                 self.createDataTable('forms_table', 'Forms', data[d])
-                self.createTable('forms_sample', self.getSummary(data[d]))
+                self.createTable(
+                  'forms_sample',
+                  self.getSummary(self.sortObject(data[d]))
+                )
                 break
               case 'langCodes':
                 self.newChart(
@@ -200,13 +203,22 @@ var updateData = {
     return summary
   },
   sortObject: function(obj) {
-    sorted = Object.keys(obj)
+    return Object.keys(obj)
       .sort()
       .reduce(function(acc, key) {
         acc[key] = obj[key]
         return acc
       }, {})
-    return sorted
+  },
+  sortObjectByCount: function(obj) {
+    return Object.keys(obj)
+      .sort(function(a, b) {
+        return obj[b].count - obj[a].count
+      })
+      .reduce(function(acc, key) {
+        acc[key] = obj[key]
+        return acc
+      }, {})
   },
   createDataTable: function(id, title, data) {
     let dataset = []
