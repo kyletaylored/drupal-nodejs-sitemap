@@ -120,6 +120,7 @@ var updateData = {
 
         for (var d in data) {
           if (data.hasOwnProperty(d)) {
+            data[d] = self.sortObject(data[d])
             switch (d) {
               case 'nodeTypes':
                 self.newChart(
@@ -197,6 +198,15 @@ var updateData = {
       }
     }
     return summary
+  },
+  sortObject: function(obj) {
+    sorted = Object.keys(obj)
+      .sort()
+      .reduce(function(acc, key) {
+        acc[key] = obj[key]
+        return acc
+      }, {})
+    return sorted
   },
   createDataTable: function(id, title, data) {
     let dataset = []
