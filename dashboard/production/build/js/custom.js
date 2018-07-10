@@ -175,7 +175,7 @@ var updateData = {
   updateMeta: function(data) {
     let meta = {
       page_count: data.metadata.pageCount,
-      avg_time: data.headers.responseTimes.average,
+      avg_time: (data.headers.responseTimes.average / 1000).toFixed(2),
       total_ct: Object.keys(data.nodeTypes).length,
       total_forms: Object.keys(data.formTypes).length,
       total_languages: Object.keys(data.langCodes).length,
