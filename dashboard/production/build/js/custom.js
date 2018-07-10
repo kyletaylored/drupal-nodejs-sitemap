@@ -164,6 +164,15 @@ var updateData = {
                   data[d],
                   'pie'
                 )
+                self.createDataTable(
+                  'status_codes_table',
+                  'Status Codes',
+                  data[d]
+                )
+                self.createTable(
+                  'status_codes_sample',
+                  self.getSummary(self.sortObject(data[d]))
+                )
                 break
               default:
             }
