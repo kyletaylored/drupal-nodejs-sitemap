@@ -4991,3 +4991,11 @@ ul.notifications {
 .calendar-exibit .calendar-table {
   padding: 0 0 4px 0;
 }
+
+/* Custom */
+.table-sample tr td:last-child {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 300px;
+}
