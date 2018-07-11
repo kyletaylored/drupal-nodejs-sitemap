@@ -2,7 +2,14 @@
 
 This is a simple node.js script that will process a sitemap to extract content types and other information for research purposes.
 
-<a href="https://www.useloom.com/embed/1b0335cf171a4240839682ccd3fab4fa" target="_blank">Demo video</a>
+<p style="text-align:center">
+  
+![Drupal content audit](https://raw.githubusercontent.com/kyletaylored/drupal-nodejs-sitemap/master/dashboard.png)
+
+### <a href="https://www.useloom.com/share/34f2f1d902aa4b1db8e95385dcb8d00d" target="_blank">Demo video</a>
+
+</p>
+
 
 ## Scraper
 
