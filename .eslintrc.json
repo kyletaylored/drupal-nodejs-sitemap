@@ -1,1 +1,8 @@
-{"extends": "standard"}
+{
+  "extends": "standard",
+  "rules": {
+    "semi": ["error", "always"],
+    "quotes": ["error", "double"],
+    "space-before-function-paren": ["error", "never"]
+  }
+}
