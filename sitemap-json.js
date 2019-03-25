@@ -8,12 +8,15 @@ const URL = require("url").URL;
 const path = require("path");
 const extract = require("meta-extractor");
 const lang = require("./scripts/lang.js");
+const pLimit = require("p-limit");
+const limit = pLimit(6);
 
 // Instansiate utilities.
 let sitemap = new Sitemapper();
 let bar = new cliProgress.Bar({}, cliProgress.Presets.shades_classic);
 let log = console.log.bind(this);
 let fileUrlSample = "";
+const debugMode = false;
 
 // Debugging
 // let loopLimit = 20
@@ -35,66 +38,73 @@ let loopCount = 0;
 async function main(sitemapUrl, file) {
   try {
     // Process sitemap for URLs
-    let sites = await sitemap.fetch(sitemapUrl);
-    // Get sample URL
-    fileUrlSample = new URL(sites.sites[0]);
-    metadata["pageCount"] = sites.sites.length;
-    await extractMeta(fileUrlSample.origin);
-    // Start loop.
-    bar.start(sites.sites.length, 0);
-    await asyncForEach(sites.sites, async uri => processSitemapPage(uri));
+    await sitemap
+      .fetch(sitemapUrl)
+      .then(sites => {
+        // Get sample URL
+        fileUrlSample = new URL(sites.sites[0]);
+        metadata["pageCount"] = sites.sites.length;
+        extractMeta(fileUrlSample.origin);
+
+        // Start loop.
+        bar.start(sites.sites.length, 0);
+        getAllUrls(sites.sites).then(() => {
+          // Use URL sample as part of JSON file name (in case running multiple scans.)
+          let key = fileUrlSample.hostname;
+          file = "results/" + key + ".json";
+
+          // Kill progress bar.
+          bar.stop();
+
+          // Process math for response times, merge in.
+          let respObj = {
+            average: headers.responseTimes.values.average(),
+            min: headers.responseTimes.values.min(),
+            max: headers.responseTimes.values.max()
+          };
+          headers.responseTimes = Object.assign(respObj, headers.responseTimes);
+
+          // Merge into single object.
+          let metaObj = {
+            metadata: metadata,
+            nodeTypes: nodeTypes,
+            formTypes: formTypes,
+            statusCodes: statusCodes,
+            langCodes: langCodes,
+            headers: headers
+          };
+
+          // Print results
+          log(metaObj);
+
+          // Write to own file
+          jsonfile.writeFile(file, metaObj, err => console.error(err));
+
+          // Update master list.
+          let masterFile = "./results/sitemap-results.json";
+          jsonfile.readFile(masterFile, (err, obj) => {
+            if (err !== null) {
+              if (err.code === "ENOENT") {
+                let tmpObj = {};
+                tmpObj[key] = key;
+                jsonfile.writeFile(masterFile, tmpObj, err =>
+                  console.error(err)
+                );
+                console.log("Created new sitemap-results.json file.");
+              }
+            } else {
+              obj[key] = key;
+              jsonfile.writeFile(masterFile, obj, err => console.error(err));
+            }
+          });
+        });
+      })
+      .catch(err => {
+        console.log(funcName(arguments), err);
+      });
   } catch (err) {
-    console.log("Err: ", err);
+    debug("Err: ", err);
   }
-
-  // Use URL sample as part of JSON file name (in case running multiple scans.)
-  let key = fileUrlSample.hostname;
-  file = "results/" + key + ".json";
-
-  // Kill progress bar.
-  await bar.stop();
-
-  // Process math for response times, merge in.
-  let respObj = {
-    average: headers.responseTimes.values.average(),
-    min: headers.responseTimes.values.min(),
-    max: headers.responseTimes.values.max()
-  };
-  headers.responseTimes = Object.assign(respObj, headers.responseTimes);
-
-  // Merge into single object.
-  let metaObj = {
-    metadata: metadata,
-    nodeTypes: nodeTypes,
-    formTypes: formTypes,
-    statusCodes: statusCodes,
-    langCodes: langCodes,
-    headers: headers
-  };
-
-  // Get final filename.
-
-  // Print results
-  await log(metaObj);
-
-  // Write to own file
-  await jsonfile.writeFile(file, metaObj, err => console.error(err));
-
-  // Update master list.
-  let masterFile = "./results/sitemap-results.json";
-  jsonfile.readFile(masterFile, (err, obj) => {
-    if (err !== null) {
-      if (err.code === "ENOENT") {
-        let tmpObj = {};
-        tmpObj[key] = key;
-        jsonfile.writeFile(masterFile, tmpObj, err => console.error(err));
-        console.log("Created new sitemap-results.json file.");
-      }
-    } else {
-      obj[key] = key;
-      jsonfile.writeFile(masterFile, obj, err => console.error(err));
-    }
-  });
 }
 
 /**
@@ -115,13 +125,17 @@ async function asyncForEach(array, callback) {
  * @param {string} uri A URL to be processed.
  */
 async function extractMeta(uri) {
-  await fetch(uri).then(resp => {
-    if (resp) {
-      extract({ uri: resp.url }, (_err, res) => {
-        metadata = Object.assign(res, metadata);
-      });
-    }
-  });
+  await fetch(uri)
+    .then(resp => {
+      if (resp) {
+        extract({ uri: resp.url }, (_err, res) => {
+          metadata = Object.assign(res, metadata);
+        });
+      }
+    })
+    .catch(err => {
+      debug(funcName(arguments), err);
+    });
 }
 
 // Process the URL in the sitemap, store results in docstore.
@@ -130,9 +144,9 @@ async function processSitemapPage(uri) {
 
   // Check if URI is a file.
   let ext = path.extname(uri);
-  if (ext !== "" && ext !== ".html") {
-    // It's a file.
-    storeResults(nodeTypes, "file", uri);
+  let extensions = ["", ".html", ".org", ".com", ".io", ".net", ".biz"];
+  if (!extensions.includes(ext)) {
+    processFileType(uri, ext);
     let endTime = new Date().getTime();
     headers.responseTimes.values.push(endTime - startTime);
   } else {
@@ -178,7 +192,9 @@ async function processSitemapPage(uri) {
           }
         });
       })
-      .catch(err => console.log(err));
+      .catch(err => {
+        debug(funcName(arguments), err);
+      });
   }
 
   // Update the current value of progress by 1, even if request fails.
@@ -219,12 +235,35 @@ async function extractFormTypes(forms, uri, docstore) {
   }
 }
 
+/**
+ * Extract language from data.
+ * @param {object} html
+ * @param {string} uri
+ * @param {object} docstore
+ */
 async function extractLanguage(html, uri, docstore) {
   if (html.attr("lang")) {
     let name = lang.getName(html.attr("lang"));
     storeResults(docstore, name, uri);
   }
 }
+
+/**
+ * Process file.
+ * @param {string} uri The url of the file.
+ */
+async function processFileType(uri, ext) {
+  // It's a file.
+  storeResults(nodeTypes, ext, uri);
+  await fetch(uri)
+    .then(resp => {
+      storeResults(statusCodes, resp.status, uri);
+    })
+    .catch(err => {
+      debug(funcName(arguments), err);
+    });
+}
+
 /**
  * Create a section in the larger doctore object to keep node and form data
  * while we're processing each request. Keep an array of URLs attached to each
@@ -247,6 +286,22 @@ function storeResults(docstore, name, uri) {
   docstore[name].urls.push(uri);
 }
 
+/**
+ * Process all URLs with increased concurrency.
+ * @param {array} urls An array of URLs to process.
+ */
+async function getAllUrls(urls) {
+  const promiseList = urls.map(uri => {
+    return limit(() => processSitemapPage(uri));
+  });
+  try {
+    await Promise.all(promiseList);
+  } catch (error) {
+    debug(error);
+    throw error;
+  }
+}
+
 // Add calculation functions to Array prototype
 Array.prototype.average = function() {
   return (this.reduce((sume, el) => sume + el, 0) / this.length).toFixed(2);
@@ -262,9 +317,19 @@ Array.prototype.min = function() {
  * Report errors.
  * @param {*} err Any object.
  */
-function onErr(err) {
-  console.log(err);
-  return 1;
+function debug() {
+  if (debugMode) {
+    console.log.apply(console, arguments);
+    return 1;
+  }
+}
+
+/**
+ * Get function name.
+ * @param {Object} args Native function arguments.
+ */
+function funcName(args) {
+  return args.callee.toString().match(/function ([^\(]+)/)[1];
 }
 
 // Create prompt input.
@@ -284,7 +349,7 @@ if (process.argv[2]) {
   prompt.start();
   prompt.get(properties, function(err, result) {
     if (err) {
-      return onErr(err);
+      return debug(err);
     }
     // console.log('Command-line input received:')
     // console.table(result)
