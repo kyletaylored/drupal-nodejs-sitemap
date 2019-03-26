@@ -26,6 +26,7 @@ let https = true;
 // Docstore.
 let nodeTypes = {};
 let formTypes = {};
+let fileTypes = {};
 let langCodes = {};
 let statusCodes = {};
 let metadata = {};
@@ -230,7 +231,7 @@ async function extractLanguage(html, uri, docstore) {
  */
 async function processFileType(uri, ext) {
   // It's a file.
-  storeResults(nodeTypes, ext, uri);
+  storeResults(fileTypes, ext, uri);
   await fetch(uri)
     .then(resp => {
       storeResults(statusCodes, resp.status, uri);
@@ -299,7 +300,7 @@ async function getAllUrls(urls) {
     await Promise.all(promiseList);
   } catch (error) {
     debug(error);
-    throw error;
+    // throw error;
   }
 }
 
