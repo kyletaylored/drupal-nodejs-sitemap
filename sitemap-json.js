@@ -2,6 +2,7 @@ const prompt = require("prompt");
 const cheerio = require("cheerio");
 const Sitemapper = require("sitemapper");
 const fetch = require("node-fetch");
+const axios = require("axios");
 const jsonfile = require("jsonfile");
 const cliProgress = require("cli-progress");
 const URL = require("url").URL;
@@ -17,6 +18,7 @@ let bar = new cliProgress.Bar({}, cliProgress.Presets.shades_classic);
 let log = console.log.bind(this);
 let fileUrlSample = "";
 const debugMode = false;
+let https = true;
 
 // Debugging
 // let loopLimit = 20
@@ -35,7 +37,8 @@ let headers = {
 let loopCount = 0;
 
 // Main function to run.
-async function main(sitemapUrl, file) {
+async function main(sitemapUrl) {
+  https = !sitemapUrl.match("^http://");
   try {
     // Process sitemap for URLs
     await sitemap
@@ -51,7 +54,7 @@ async function main(sitemapUrl, file) {
         getAllUrls(sites.sites).then(() => {
           // Use URL sample as part of JSON file name (in case running multiple scans.)
           let key = fileUrlSample.hostname;
-          file = "results/" + key + ".json";
+          let file = "results/" + key + ".json";
 
           // Kill progress bar.
           bar.stop();
@@ -125,10 +128,10 @@ async function asyncForEach(array, callback) {
  * @param {string} uri A URL to be processed.
  */
 async function extractMeta(uri) {
-  await fetch(uri)
+  await axios(uri)
     .then(resp => {
       if (resp) {
-        extract({ uri: resp.url }, (_err, res) => {
+        extract({ uri: resp.config.url }, (_err, res) => {
           metadata = Object.assign(res, metadata);
         });
       }
@@ -140,7 +143,12 @@ async function extractMeta(uri) {
 
 // Process the URL in the sitemap, store results in docstore.
 async function processSitemapPage(uri) {
+  // Start timer.
   let startTime = new Date().getTime();
+
+  // Normalize URLs
+  uri =
+    https && uri.match("^http://") ? uri.replace("http://", "https://") : uri;
 
   // Check if URI is a file.
   let ext = path.extname(uri);
@@ -150,50 +158,18 @@ async function processSitemapPage(uri) {
     let endTime = new Date().getTime();
     headers.responseTimes.values.push(endTime - startTime);
   } else {
-    await fetch(uri)
+    await axios({ maxRedirects: 0, method: "get", url: uri })
       .then(resp => {
+        // Capture response time.
         let endTime = new Date().getTime();
-
-        resp.text().then(body => {
-          if (resp.status === 200 && body && !resp.redirected) {
-            // Store headers for first request.
-            if (loopCount < 1) {
-              resp.headers.forEach(function(value, name) {
-                headers[name] = value;
-              });
-              loopCount++;
-            }
-
-            // Capture response time.
-            headers.responseTimes.values.push(endTime - startTime);
-
-            // Parse the document body
-            let $ = cheerio.load(body);
-            // Extract from body.
-            let html = $("html");
-            let htmlBody = $("body");
-            let forms = $("form", htmlBody);
-            extractLanguage(html, uri, langCodes);
-            extractNodeTypes(htmlBody, uri, nodeTypes);
-            extractFormTypes(forms, uri, formTypes);
-            storeResults(statusCodes, resp.status, uri);
-          } else {
-            if (resp.redirected) {
-              let redCodes = {
-                follow: "301 / 302",
-                error: "500",
-                manual: "manual"
-              };
-              storeResults(statusCodes, redCodes[resp.redirected], uri);
-            } else {
-              // If response fails, store that record.
-              storeResults(statusCodes, resp.status, uri);
-            }
-          }
-        });
+        headers.responseTimes.values.push(endTime - startTime);
+        // Process request.
+        processRequest(resp, uri);
       })
       .catch(err => {
         debug(funcName(arguments), err);
+        // If response fails, store that record.
+        storeResults(statusCodes, err.response.status, uri);
       });
   }
 
@@ -262,6 +238,31 @@ async function processFileType(uri, ext) {
     .catch(err => {
       debug(funcName(arguments), err);
     });
+}
+
+/**
+ *
+ * @param {object} resp Response from Axios.
+ */
+async function processRequest(resp, uri) {
+  // Store headers for first request.
+  if (loopCount < 1) {
+    for (let atr in resp.headers) {
+      headers[atr] = resp.headers[atr];
+    }
+    loopCount++;
+  }
+
+  // Parse the document body
+  let $ = cheerio.load(resp.data);
+  // Extract from body.
+  let html = $("html");
+  let htmlBody = $("body");
+  let forms = $("form", htmlBody);
+  extractLanguage(html, uri, langCodes);
+  extractNodeTypes(htmlBody, uri, nodeTypes);
+  extractFormTypes(forms, uri, formTypes);
+  storeResults(statusCodes, resp.status, uri);
 }
 
 /**
@@ -355,6 +356,8 @@ if (process.argv[2]) {
     // console.table(result)
 
     // Parse sitemap.
+    let masterStart = new Date().getTime();
     main(result.url);
+    console.log("Total time: ", new Date().getTime() - masterStart);
   });
 }
