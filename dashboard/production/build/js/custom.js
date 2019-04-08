@@ -135,6 +135,19 @@ var updateData = {
                   self.getSummary(self.sortObject(data[d]))
                 );
                 break;
+              case "fileTypes":
+                self.newChart(
+                  "overview_files",
+                  "Overview of files",
+                  "Files",
+                  data[d]
+                );
+                self.createDataTable("files_table", "Files", data[d]);
+                self.createTable(
+                  "files_sample",
+                  self.getSummary(self.sortObject(data[d]))
+                );
+                break;
               case "formTypes":
                 self.newChart(
                   "overview_form",
@@ -190,13 +203,13 @@ var updateData = {
       total_languages: Object.keys(data.langCodes).length,
       total_errors: Object.keys(data.statusCodes).length
     };
-
     // Loop through object.
     for (var value in meta) {
       if (meta.hasOwnProperty(value)) {
         $("#" + value).text(meta[value]);
       }
     }
+    console.log(data.headers);
   },
   getSummary: function(data) {
     let summary = {};

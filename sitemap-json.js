@@ -14,6 +14,7 @@ let sitemap = new Sitemapper();
 let bar = new cliProgress.Bar({}, cliProgress.Presets.shades_classic);
 let log = console.log.bind(this);
 let fileUrlSample = "";
+let https = true;
 
 // Debugging
 // let loopLimit = 20
@@ -23,6 +24,7 @@ let nodeTypes = {};
 let formTypes = {};
 let langCodes = {};
 let statusCodes = {};
+let fileTypes = {};
 let metadata = {};
 let headers = {
   responseTimes: {
@@ -36,6 +38,7 @@ async function main(sitemapUrl, file) {
   try {
     // Process sitemap for URLs
     let sites = await sitemap.fetch(sitemapUrl);
+    https = !sitemapUrl.match("^http://");
     // Get sample URL
     fileUrlSample = new URL(sites.sites[0]);
     metadata["pageCount"] = sites.sites.length;
@@ -66,6 +69,7 @@ async function main(sitemapUrl, file) {
   let metaObj = {
     metadata: metadata,
     nodeTypes: nodeTypes,
+    fileTypes: fileTypes,
     formTypes: formTypes,
     statusCodes: statusCodes,
     langCodes: langCodes,
@@ -128,11 +132,15 @@ async function extractMeta(uri) {
 async function processSitemapPage(uri) {
   let startTime = new Date().getTime();
 
+  // Normalize URLs
+  uri =
+    https && uri.match("^http://") ? uri.replace("http://", "https://") : uri;
+
   // Check if URI is a file.
   let ext = path.extname(uri);
-  if (ext !== "" && ext !== ".html") {
-    // It's a file.
-    storeResults(nodeTypes, "file", uri);
+  let extensions = ["", ".html", ".org", ".com", ".io", ".net", ".biz"];
+  if (!extensions.includes(ext)) {
+    processFileType(uri, ext);
     let endTime = new Date().getTime();
     headers.responseTimes.values.push(endTime - startTime);
   } else {
@@ -225,6 +233,21 @@ async function extractLanguage(html, uri, docstore) {
     storeResults(docstore, name, uri);
   }
 }
+
+/**
+ * Process file.
+ * @param {string} uri The url of the file.
+ */
+async function processFileType(uri, ext) {
+  // It's a file.
+  storeResults(fileTypes, ext, uri);
+  await fetch(uri)
+    .then(resp => {
+      storeResults(statusCodes, resp.status, uri);
+    })
+    .catch(err => {});
+}
+
 /**
  * Create a section in the larger doctore object to keep node and form data
  * while we're processing each request. Keep an array of URLs attached to each
