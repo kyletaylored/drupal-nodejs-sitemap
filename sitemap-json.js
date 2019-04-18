@@ -203,8 +203,16 @@ async function extractNodeTypes(body, uri, docstore) {
   let classes = await body.attr("class");
   if (classes) {
     for (let className of classes.split(" ")) {
-      if (className.includes("node-type-")) {
-        storeResults(docstore, className.substr(10), uri);
+      cName = className;
+      // Multiple types of regex. Uncomment the one you need.
+      // Drupal (default)
+      var regex = /(?:.*node-type-)/g;
+      var cName = className.replace(regex, "").trim();
+      // WordPress
+      // var regex = /(?:.*-template-)/g;
+      // var cName = className.trim();
+      if (className.match(regex)) {
+        storeResults(docstore, cName, uri);
         break;
       }
     }
