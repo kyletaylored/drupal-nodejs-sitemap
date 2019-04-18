@@ -229,8 +229,8 @@ async function extractFormTypes(forms, uri, docstore) {
 
 async function extractLanguage(html, uri, docstore) {
   if (html.attr("lang")) {
-    let name = lang.getName(html.attr("lang"));
-    storeResults(docstore, name, uri);
+    // let name = lang.getName(html.attr("lang"));
+    storeResults(docstore, html.attr("lang"), uri);
   }
 }
 
