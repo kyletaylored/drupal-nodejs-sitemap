@@ -2,22 +2,18 @@ const prompt = require("prompt");
 const cheerio = require("cheerio");
 const Sitemapper = require("sitemapper");
 const fetch = require("node-fetch");
-const axios = require("axios");
 const jsonfile = require("jsonfile");
 const cliProgress = require("cli-progress");
 const URL = require("url").URL;
 const path = require("path");
 const extract = require("meta-extractor");
 const lang = require("./scripts/lang.js");
-const pLimit = require("p-limit");
-const limit = pLimit(6);
 
 // Instansiate utilities.
 let sitemap = new Sitemapper();
 let bar = new cliProgress.Bar({}, cliProgress.Presets.shades_classic);
 let log = console.log.bind(this);
 let fileUrlSample = "";
-const debugMode = false;
 let https = true;
 
 // Debugging
@@ -26,9 +22,9 @@ let https = true;
 // Docstore.
 let nodeTypes = {};
 let formTypes = {};
-let fileTypes = {};
 let langCodes = {};
 let statusCodes = {};
+let fileTypes = {};
 let metadata = {};
 let headers = {
   responseTimes: {
@@ -38,77 +34,71 @@ let headers = {
 let loopCount = 0;
 
 // Main function to run.
-async function main(sitemapUrl) {
-  https = !sitemapUrl.match("^http://");
+async function main(sitemapUrl, file) {
   try {
     // Process sitemap for URLs
-    await sitemap
-      .fetch(sitemapUrl)
-      .then(sites => {
-        // Get sample URL
-        fileUrlSample = new URL(sites.sites[0]);
-        metadata["pageCount"] = sites.sites.length;
-        extractMeta(fileUrlSample.origin);
-
-        // Start loop.
-        bar.start(sites.sites.length, 0);
-        getAllUrls(sites.sites).then(() => {
-          // Use URL sample as part of JSON file name (in case running multiple scans.)
-          let key = fileUrlSample.hostname;
-          let file = "results/" + key + ".json";
-
-          // Kill progress bar.
-          bar.stop();
-
-          // Process math for response times, merge in.
-          let respObj = {
-            average: headers.responseTimes.values.average(),
-            min: headers.responseTimes.values.min(),
-            max: headers.responseTimes.values.max()
-          };
-          headers.responseTimes = Object.assign(respObj, headers.responseTimes);
-
-          // Merge into single object.
-          let metaObj = {
-            metadata: metadata,
-            nodeTypes: nodeTypes,
-            formTypes: formTypes,
-            statusCodes: statusCodes,
-            langCodes: langCodes,
-            headers: headers
-          };
-
-          // Print results
-          log(metaObj);
-
-          // Write to own file
-          jsonfile.writeFile(file, metaObj, err => console.error(err));
-
-          // Update master list.
-          let masterFile = "./results/sitemap-results.json";
-          jsonfile.readFile(masterFile, (err, obj) => {
-            if (err !== null) {
-              if (err.code === "ENOENT") {
-                let tmpObj = {};
-                tmpObj[key] = key;
-                jsonfile.writeFile(masterFile, tmpObj, err =>
-                  console.error(err)
-                );
-                console.log("Created new sitemap-results.json file.");
-              }
-            } else {
-              obj[key] = key;
-              jsonfile.writeFile(masterFile, obj, err => console.error(err));
-            }
-          });
-        });
-      })
-      .catch(err => {
-        console.log(funcName(arguments), err);
-      });
+    let sites = await sitemap.fetch(sitemapUrl);
+    https = !sitemapUrl.match("^http://");
+    // Get sample URL
+    fileUrlSample = new URL(sites.sites[0]);
+    metadata["pageCount"] = sites.sites.length;
+    await extractMeta(fileUrlSample.origin);
+    // Start loop.
+    bar.start(sites.sites.length, 0);
+    await asyncForEach(sites.sites, async uri => processSitemapPage(uri));
   } catch (err) {
-    debug("Err: ", err);
+    console.log("Err: ", err);
   }
+
+  // Use URL sample as part of JSON file name (in case running multiple scans.)
+  let key = fileUrlSample.hostname;
+  file = "results/" + key + ".json";
+
+  // Kill progress bar.
+  await bar.stop();
+
+  // Process math for response times, merge in.
+  let respObj = {
+    average: headers.responseTimes.values.average(),
+    min: headers.responseTimes.values.min(),
+    max: headers.responseTimes.values.max()
+  };
+  headers.responseTimes = Object.assign(respObj, headers.responseTimes);
+
+  // Merge into single object.
+  let metaObj = {
+    metadata: metadata,
+    nodeTypes: nodeTypes,
+    fileTypes: fileTypes,
+    formTypes: formTypes,
+    statusCodes: statusCodes,
+    langCodes: langCodes,
+    headers: headers
+  };
+
+  // Get final filename.
+
+  // Print results
+  await log(metaObj);
+
+  // Write to own file
+  await jsonfile.writeFile(file, metaObj, err => console.error(err));
+
+  // Update master list.
+  let masterFile = "./results/sitemap-results.json";
+  jsonfile.readFile(masterFile, (err, obj) => {
+    if (err !== null) {
+      if (err.code === "ENOENT") {
+        let tmpObj = {};
+        tmpObj[key] = key;
+        jsonfile.writeFile(masterFile, tmpObj, err => console.error(err));
+        console.log("Created new sitemap-results.json file.");
+      }
+    } else {
+      obj[key] = key;
+      jsonfile.writeFile(masterFile, obj, err => console.error(err));
+    }
+  });
 }
 
 /**
@@ -129,22 +119,17 @@ async function asyncForEach(array, callback) {
  * @param {string} uri A URL to be processed.
  */
 async function extractMeta(uri) {
-  await axios(uri)
-    .then(resp => {
-      if (resp) {
-        extract({ uri: resp.config.url }, (_err, res) => {
-          metadata = Object.assign(res, metadata);
-        });
-      }
-    })
-    .catch(err => {
-      debug(funcName(arguments), err);
-    });
+  await fetch(uri).then(resp => {
+    if (resp) {
+      extract({ uri: resp.url }, (_err, res) => {
+        metadata = Object.assign(res, metadata);
+      });
+    }
+  });
 }
 
 // Process the URL in the sitemap, store results in docstore.
 async function processSitemapPage(uri) {
-  // Start timer.
   let startTime = new Date().getTime();
 
   // Normalize URLs
@@ -159,19 +144,49 @@ async function processSitemapPage(uri) {
     let endTime = new Date().getTime();
     headers.responseTimes.values.push(endTime - startTime);
   } else {
-    await axios({ maxRedirects: 0, method: "get", url: uri })
+    await fetch(uri)
       .then(resp => {
-        // Capture response time.
         let endTime = new Date().getTime();
-        headers.responseTimes.values.push(endTime - startTime);
-        // Process request.
-        processRequest(resp, uri);
+
+        resp.text().then(body => {
+          if (resp.status === 200 && body && !resp.redirected) {
+            // Store headers for first request.
+            if (loopCount < 1) {
+              resp.headers.forEach(function(value, name) {
+                headers[name] = value;
+              });
+              loopCount++;
+            }
+
+            // Capture response time.
+            headers.responseTimes.values.push(endTime - startTime);
+
+            // Parse the document body
+            let $ = cheerio.load(body);
+            // Extract from body.
+            let html = $("html");
+            let htmlBody = $("body");
+            let forms = $("form", htmlBody);
+            extractLanguage(html, uri, langCodes);
+            extractNodeTypes(htmlBody, uri, nodeTypes);
+            extractFormTypes(forms, uri, formTypes);
+            storeResults(statusCodes, resp.status, uri);
+          } else {
+            if (resp.redirected) {
+              let redCodes = {
+                follow: "301 / 302",
+                error: "500",
+                manual: "manual"
+              };
+              storeResults(statusCodes, redCodes[resp.redirected], uri);
+            } else {
+              // If response fails, store that record.
+              storeResults(statusCodes, resp.status, uri);
+            }
+          }
+        });
       })
-      .catch(err => {
-        debug(funcName(arguments), err);
-        // If response fails, store that record.
-        storeResults(statusCodes, err.response.status, uri);
-      });
+      .catch(err => console.log(err));
   }
 
   // Update the current value of progress by 1, even if request fails.
@@ -188,8 +203,16 @@ async function extractNodeTypes(body, uri, docstore) {
   let classes = await body.attr("class");
   if (classes) {
     for (let className of classes.split(" ")) {
-      if (className.includes("node-type-")) {
-        storeResults(docstore, className.substr(10), uri);
+      cName = className;
+      // Multiple types of regex. Uncomment the one you need.
+      // Drupal (default)
+      var regex = /(?:.*node-type-)/g;
+      var cName = className.replace(regex, "").trim();
+      // WordPress
+      // var regex = /(?:.*-template-)/g;
+      // var cName = className.trim();
+      if (className.match(regex)) {
+        storeResults(docstore, cName, uri);
         break;
       }
     }
@@ -207,21 +230,28 @@ async function extractNodeTypes(body, uri, docstore) {
 async function extractFormTypes(forms, uri, docstore) {
   if (forms.length > 0) {
     for (var i = 0; i < forms.length; i++) {
-      storeResults(docstore, forms[i].attribs.id, uri);
+      let form = forms[i];
+
+      let formId = form.attribs.id || false;
+      if (!formId) {
+        if (form.attribs.class !== "") {
+          for (let className of form.attribs.class) {
+            formId = className;
+            break;
+          }
+        } else {
+          formId = "undefined";
+        }
+      }
+      storeResults(docstore, formId, uri);
     }
   }
 }
 
-/**
- * Extract language from data.
- * @param {object} html
- * @param {string} uri
- * @param {object} docstore
- */
 async function extractLanguage(html, uri, docstore) {
   if (html.attr("lang")) {
-    let name = lang.getName(html.attr("lang"));
-    storeResults(docstore, name, uri);
+    // let name = lang.getName(html.attr("lang"));
+    storeResults(docstore, html.attr("lang"), uri);
   }
 }
 
@@ -236,34 +266,7 @@ async function processFileType(uri, ext) {
     .then(resp => {
       storeResults(statusCodes, resp.status, uri);
     })
-    .catch(err => {
-      debug(funcName(arguments), err);
-    });
-}
-
-/**
- *
- * @param {object} resp Response from Axios.
- */
-async function processRequest(resp, uri) {
-  // Store headers for first request.
-  if (loopCount < 1) {
-    for (let atr in resp.headers) {
-      headers[atr] = resp.headers[atr];
-    }
-    loopCount++;
-  }
-
-  // Parse the document body
-  let $ = cheerio.load(resp.data);
-  // Extract from body.
-  let html = $("html");
-  let htmlBody = $("body");
-  let forms = $("form", htmlBody);
-  extractLanguage(html, uri, langCodes);
-  extractNodeTypes(htmlBody, uri, nodeTypes);
-  extractFormTypes(forms, uri, formTypes);
-  storeResults(statusCodes, resp.status, uri);
+    .catch(err => {});
 }
 
 /**
@@ -288,22 +291,6 @@ function storeResults(docstore, name, uri) {
   docstore[name].urls.push(uri);
 }
 
-/**
- * Process all URLs with increased concurrency.
- * @param {array} urls An array of URLs to process.
- */
-async function getAllUrls(urls) {
-  const promiseList = urls.map(uri => {
-    return limit(() => processSitemapPage(uri));
-  });
-  try {
-    await Promise.all(promiseList);
-  } catch (error) {
-    debug(error);
-    // throw error;
-  }
-}
-
 // Add calculation functions to Array prototype
 Array.prototype.average = function() {
   return (this.reduce((sume, el) => sume + el, 0) / this.length).toFixed(2);
@@ -319,19 +306,9 @@ Array.prototype.min = function() {
  * Report errors.
  * @param {*} err Any object.
  */
-function debug() {
-  if (debugMode) {
-    console.log.apply(console, arguments);
-    return 1;
-  }
-}
-
-/**
- * Get function name.
- * @param {Object} args Native function arguments.
- */
-function funcName(args) {
-  return args.callee.toString().match(/function ([^\(]+)/)[1];
+function onErr(err) {
+  console.log(err);
+  return 1;
 }
 
 // Create prompt input.
@@ -351,14 +328,12 @@ if (process.argv[2]) {
   prompt.start();
   prompt.get(properties, function(err, result) {
     if (err) {
-      return debug(err);
+      return onErr(err);
     }
     // console.log('Command-line input received:')
     // console.table(result)
 
     // Parse sitemap.
-    let masterStart = new Date().getTime();
     main(result.url);
-    console.log("Total time: ", new Date().getTime() - masterStart);
   });
 }
