@@ -230,17 +230,18 @@ async function extractNodeTypes(body, uri, docstore) {
 async function extractFormTypes(forms, uri, docstore) {
   if (forms.length > 0) {
     for (var i = 0; i < forms.length; i++) {
-      let formId = forms[i].attribs.id || false;
+      let form = forms[i];
+
+      let formId = form.attribs.id || false;
       if (!formId) {
-        let classes = await forms[i].attribs.class;
-        if (classes) {
-          for (let className of classes.split(" ")) {
+        if (form.attribs.class !== "") {
+          for (let className of form.attribs.class) {
             formId = className;
             break;
           }
+        } else {
+          formId = "undefined";
         }
-      } else {
-        formId = "undefined";
       }
       storeResults(docstore, formId, uri);
     }
