@@ -122,6 +122,7 @@ async function extractMeta(uri) {
   await fetch(uri).then(resp => {
     if (resp) {
       extract({ uri: resp.url }, (_err, res) => {
+        res = res || {};
         metadata = Object.assign(res, metadata);
       });
     }
