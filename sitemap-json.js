@@ -15,6 +15,10 @@ let bar = new cliProgress.Bar({}, cliProgress.Presets.shades_classic);
 let log = console.log.bind(this);
 let fileUrlSample = "";
 let https = true;
+let fetchHeaders = {
+  "User-Agent":
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.103 Safari/537.36"
+};
 
 // Debugging
 // let loopLimit = 20
@@ -119,7 +123,7 @@ async function asyncForEach(array, callback) {
  * @param {string} uri A URL to be processed.
  */
 async function extractMeta(uri) {
-  await fetch(uri).then(resp => {
+  await fetch(uri, { headers: fetchHeaders }).then(resp => {
     if (resp) {
       extract({ uri: resp.url }, (_err, res) => {
         res = res || {};
@@ -145,7 +149,7 @@ async function processSitemapPage(uri) {
     let endTime = new Date().getTime();
     headers.responseTimes.values.push(endTime - startTime);
   } else {
-    await fetch(uri)
+    await fetch(uri, { headers: fetchHeaders })
       .then(resp => {
         let endTime = new Date().getTime();
 
