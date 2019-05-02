@@ -1,34 +1,51 @@
-var gulp = require('gulp');
-var path = require('path');
-var sass = require('gulp-sass');
-var autoprefixer = require('gulp-autoprefixer');
-var sourcemaps = require('gulp-sourcemaps');
-var open = require('gulp-open');
+var gulp = require("gulp"),
+  concat = require("gulp-concat"),
+  rename = require("gulp-rename"),
+  sass = require('gulp-sass'),
+  gls = require("gulp-live-server"),
+  autoprefixer = require("gulp-autoprefixer");
 
-var Paths = {
-  HERE: './',
-  DIST: 'dist/',
-  CSS: './assets/css/',
-  SCSS_TOOLKIT_SOURCES: './assets/scss/paper-dashboard.scss',
-  SCSS: './assets/scss/**/**'
-};
+sass.compiler = require('node-sass');
 
-gulp.task('compile-scss', function() {
-  return gulp.src(Paths.SCSS_TOOLKIT_SOURCES)
-    .pipe(sourcemaps.init())
+var DEST = "build";
+var JS_DEST = `${DEST}/js`;
+
+gulp.task('scripts', function() {
+  return gulp.src(["src/js/*.js"])
+    .pipe(concat('custom.js'))
+    .pipe(gulp.dest(JS_DEST))
+});
+
+gulp.task('sass', function () {
+  return gulp.src('src/scss/*.scss')
     .pipe(sass().on('error', sass.logError))
-    .pipe(autoprefixer())
-    .pipe(sourcemaps.write(Paths.HERE))
-    .pipe(gulp.dest(Paths.CSS));
+    .pipe(gulp.dest('./build/css'));
 });
 
-gulp.task('watch', function() {
-  gulp.watch(Paths.SCSS, ['compile-scss']);
+gulp.task('sass-min', function () {
+  return gulp.src('src/scss/*.scss')
+    .pipe(sass({outputStyle: 'compressed'}).on('error', sass.logError))
+    .pipe(gulp.dest('./build/css'));
 });
 
-gulp.task('open', function() {
-  gulp.src('examples/dashboard.html')
-    .pipe(open());
+gulp.task("watch", function() {
+  gulp.watch("src/scss/*.scss", ["sass"]);
+  gulp.watch("src/js/*.js", ["scripts"]);
 });
 
-gulp.task('open-app', ['open', 'watch']);
+// Express server
+gulp.task("serve", function() {
+  var server = gls.new("src/app.js");
+  server.start();
+
+  // Note: try wrapping in a function if getting an error like `TypeError: Bad argument at TypeError (native) at ChildProcess.spawn`
+  gulp.watch("src/app.js", function() {
+    server.start.bind(server)();
+  });
+});
+
+gulp.task("install", ["scripts", "sass", "default"]);
+
+// Default Task
+// gulp.task('default', ['browser-sync', 'watch'])
+gulp.task("default", ["watch", "serve"]);

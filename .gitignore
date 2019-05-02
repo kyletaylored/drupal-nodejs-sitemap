@@ -36,17 +36,21 @@ bower_components
 .lock-wscript
 
 # Compiled binary addons (http://nodejs.org/api/addons.html)
-build/Release
+build
+dashboard/assets
 
 # Dependency directories
 node_modules/
 jspm_packages/
+dashboard/production/vendors
 
 # Typescript v1 declaration files
 typings/
 
-# Optional npm cache directory
+# Optional cache directory
 .npm
+nbproject
+.sass-cache
 
 # Optional eslint cache
 .eslintcache

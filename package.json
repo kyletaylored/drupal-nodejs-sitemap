@@ -5,7 +5,9 @@
   "main": "sitemap.js",
   "scripts": {
     "pretest": "eslint index.js --fix",
-    "postinstall": "cd dashboard && npm install && bower install"
+    "start": "node_modules/.bin/gulp",
+    "fetch-sitemap": "node src/cli.js",
+    "postinstall": "node_modules/.bin/bower install && node_modules/.bin/gulp install"
   },
   "keywords": [
     "drupal",
@@ -14,26 +16,35 @@
   ],
   "author": "Kyle Taylor",
   "license": "ISC",
-  "dependencies": {
-    "axios": "^0.18.0",
-    "cheerio": "^1.0.0-rc.2",
-    "cli-progress": "^2.0.0",
-    "jsonfile": "^4.0.0",
-    "meta-extractor": "^1.4.0",
-    "node-fetch": "^2.1.2",
-    "p-limit": "^2.2.0",
-    "prompt": "^1.0.0",
-    "request": "^2.88.0",
-    "sitemapper": "^2.2.0",
-    "sqlite3": "^4.0.6",
-    "url": "^0.11.0"
-  },
   "devDependencies": {
-    "eslint": "^4.19.1",
-    "eslint-config-standard": "^11.0.0",
-    "eslint-plugin-import": "^2.12.0",
-    "eslint-plugin-node": "^6.0.1",
-    "eslint-plugin-promise": "^3.8.0",
-    "eslint-plugin-standard": "^3.1.0"
+    "browser-sync": "^2.26.3",
+    "gulp": "^3",
+    "gulp-autoprefixer": "^3.1.0",
+    "gulp-concat": "^2.6.0",
+    "gulp-rename": "^1.2.2",
+    "gulp-ruby-sass": "^2.0.6",
+    "gulp-sass": "^4.0.2",
+    "node-sass": "^4.12.0"
+  },
+  "dependencies": {
+    "body-parser": "^1.18.3",
+    "bower": "^1.8.4",
+    "ejs": "^2.6.1",
+    "express": "^4.16.3",
+    "express-alias": "^0.4.0",
+    "gulp-live-server": "0.0.31",
+    "http": "0.0.0",
+    "jsonfile": "latest",
+    "morgan": "^1.9.1",
+    "opn-cli": "^3.1.0",
+    "path": "latest",
+    "reload": "^2.3.1",
+    "prompt": "latest",
+    "cheerio": "latest",
+    "sitemapper": "latest",
+    "node-fetch": "latest",
+    "cli-progress": "latest",
+    "url": "latest",
+    "meta-extractor": "latest"
   }
 }

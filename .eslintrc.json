@@ -3,6 +3,7 @@
   "rules": {
     "semi": ["error", "always"],
     "quotes": ["error", "double"],
-    "space-before-function-paren": ["error", "never"]
+    "space-before-function-paren": ["error", "never"],
+    "no-extend-native": ["error", { "exceptions": ["Object", "Array"] }]
   }
 }
