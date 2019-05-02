@@ -17,7 +17,7 @@ All you need to do is install the node modules, then run the sitemap script.
 
 ```bash
 npm install
-node sitemap-json.js
+npm run fetch-sitemap
 ```
 
 You will be prompted to enter the URL for the sitemap.xml file. The script will then begin analyze each page to detect metadata, node type body classes, forms, and any pages returned with non-success HTTP statuses.
@@ -25,7 +25,7 @@ You will be prompted to enter the URL for the sitemap.xml file. The script will 
 Alternatively, you can either pass in the sitemap URL as an argument, or wait for the prompt.
 
 ```bash
-node sitemap-json.js https://www.example.com/sitemap.xml
+npm run fetch-sitemap https://www.example.com/sitemap.xml
 ```
 
 The output will look similar to the following:
@@ -136,9 +136,4 @@ The output will look similar to the following:
 
 ## Dashboard
 
-To view the dashboard (currently in dev), run the following and visit [localhost:3002](http://localhost:3002):
-
-```bash
-cd dashboard
-node app.js
-```
+To view the dashboard (currently in dev) visit [localhost:3000](http://localhost:3000):
