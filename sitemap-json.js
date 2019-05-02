@@ -7,7 +7,7 @@ const cliProgress = require("cli-progress");
 const URL = require("url").URL;
 const path = require("path");
 const extract = require("meta-extractor");
-const lang = require("./scripts/lang.js");
+// const lang = require("./scripts/lang.js");
 
 // Instansiate utilities.
 let sitemap = new Sitemapper();
