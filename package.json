@@ -7,7 +7,7 @@
     "pretest": "eslint index.js --fix",
     "start": "node_modules/.bin/gulp",
     "fetch-sitemap": "node src/cli.js",
-    "postinstall": "node_modules/.bin/bower install && node_modules/.bin/gulp"
+    "postinstall": "node_modules/.bin/bower install && node_modules/.bin/gulp install"
   },
   "keywords": [
     "drupal",

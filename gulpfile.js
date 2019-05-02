@@ -44,7 +44,7 @@ gulp.task("serve", function() {
   });
 });
 
-gulp.task("dev", ["scripts", "sass"]);
+gulp.task("install", ["scripts", "sass", "default"]);
 
 // Default Task
 // gulp.task('default', ['browser-sync', 'watch'])
