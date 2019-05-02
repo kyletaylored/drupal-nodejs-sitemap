@@ -42,6 +42,7 @@ dashboard/assets
 # Dependency directories
 node_modules/
 jspm_packages/
+dashboard/production/vendors
 
 # Typescript v1 declaration files
 typings/
