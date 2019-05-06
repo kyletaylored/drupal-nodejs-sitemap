@@ -111,9 +111,11 @@ async function main(sitemapUrl, file) {
  */
 async function asyncForEach(array, callback) {
   // let limit = loopLimit || array.length
+  requests = []
   for (let index = 0; index < array.length; index++) {
-    await callback(array[index], index, array);
+    requests.push(callback(array[index], index, array));
   }
+  await Promise.all(requests);
 }
 
 /**
