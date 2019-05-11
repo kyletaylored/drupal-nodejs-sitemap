@@ -50,7 +50,7 @@ async function main(sitemapUrl, file) {
     bar.start(sites.sites.length, 0);
     await asyncForEach(sites.sites, async uri => processSitemapPage(uri));
   } catch (err) {
-    console.log("Err: ", err);
+    log("Err: ", err);
   }
 
   // Use URL sample as part of JSON file name (in case running multiple scans.)
@@ -85,7 +85,7 @@ async function main(sitemapUrl, file) {
   await log(metaObj);
 
   // Write to own file
-  await jsonfile.writeFile(file, metaObj, err => console.error(err));
+  await jsonfile.writeFile(file, metaObj);
 
   // Update master list.
   let masterFile = "./results/sitemap-results.json";
@@ -94,12 +94,12 @@ async function main(sitemapUrl, file) {
       if (err.code === "ENOENT") {
         let tmpObj = {};
         tmpObj[key] = key;
-        jsonfile.writeFile(masterFile, tmpObj, err => console.error(err));
-        console.log("Created new sitemap-results.json file.");
+        jsonfile.writeFile(masterFile, tmpObj);
+        log("Created new sitemap-results.json file.");
       }
     } else {
       obj[key] = key;
-      jsonfile.writeFile(masterFile, obj, err => console.error(err));
+      jsonfile.writeFile(masterFile, obj);
     }
   });
 }
@@ -111,9 +111,11 @@ async function main(sitemapUrl, file) {
  */
 async function asyncForEach(array, callback) {
   // let limit = loopLimit || array.length
+  requests = []
   for (let index = 0; index < array.length; index++) {
-    await callback(array[index], index, array);
+    requests.push(callback(array[index], index, array));
   }
+  await Promise.all(requests);
 }
 
 /**
@@ -152,45 +154,63 @@ async function processSitemapPage(uri) {
       .then(resp => {
         let endTime = new Date().getTime();
 
-        resp.text().then(body => {
-          if (resp.status === 200 && body && !resp.redirected) {
-            // Store headers for first request.
-            if (loopCount < 1) {
-              resp.headers.forEach(function(value, name) {
-                headers[name] = value;
-              });
-              loopCount++;
-            }
+        resp
+          .text()
+          .then(body => {
+            if (resp.status === 200 && body && !resp.redirected) {
+              // Store headers for first request.
+              if (loopCount < 1) {
+                resp.headers.forEach(function(value, name) {
+                  headers[name] = value;
+                });
+                loopCount++;
+              }
 
+              // Parse the document body
+              let $ = cheerio.load(body);
+              // Extract from body.
+              let html = $("html");
+              let htmlBody = $("body");
+              let forms = $("form", htmlBody);
+              extractLanguage(html, uri, langCodes);
+              extractNodeTypes(htmlBody, uri, nodeTypes);
+              extractFormTypes(forms, uri, formTypes);
+              storeResults(statusCodes, resp.status, uri);
+            } else {
+              if (resp.redirected) {
+                let redCodes = {
+                  follow: "301 / 302",
+                  error: "500",
+                  manual: "manual"
+                };
+                storeResults(statusCodes, redCodes[resp.redirected], uri);
+              } else {
+                // If response fails, store that record.
+                storeResults(statusCodes, resp.status, uri);
+              }
+            }
             // Capture response time.
             headers.responseTimes.values.push(endTime - startTime);
-
-            // Parse the document body
-            let $ = cheerio.load(body);
-            // Extract from body.
-            let html = $("html");
-            let htmlBody = $("body");
-            let forms = $("form", htmlBody);
-            extractLanguage(html, uri, langCodes);
-            extractNodeTypes(htmlBody, uri, nodeTypes);
-            extractFormTypes(forms, uri, formTypes);
-            storeResults(statusCodes, resp.status, uri);
-          } else {
-            if (resp.redirected) {
-              let redCodes = {
-                follow: "301 / 302",
-                error: "500",
-                manual: "manual"
-              };
-              storeResults(statusCodes, redCodes[resp.redirected], uri);
-            } else {
-              // If response fails, store that record.
-              storeResults(statusCodes, resp.status, uri);
-            }
-          }
-        });
+          })
+          .catch(err => {
+            log(err);
+          });
       })
-      .catch(err => console.log(err));
+      .catch(err => {
+        switch (err.code) {
+          case "ENOTFOUND":
+          case "ECONNRESET":
+          case "EMFILE":
+          case "ETIMEDOUT":
+            // Not sure, but log as broken for now.
+            storeResults(statusCodes, err.code, uri);
+            return 0;
+            break;
+          default:
+            log(err);
+            break;
+        }
+      });
   }
 
   // Update the current value of progress by 1, even if request fails.
@@ -238,10 +258,14 @@ async function extractFormTypes(forms, uri, docstore) {
 
       let formId = form.attribs.id || false;
       if (!formId) {
-        if (form.attribs.class !== "") {
-          for (let className of form.attribs.class) {
-            formId = className;
-            break;
+        if (form.attribs.class) {
+          if (isIterable(form.attribs.class)) {
+            for (let className of form.attribs.class) {
+              formId = className;
+              break;
+            }
+          } else if (form.attribs.class !== "") {
+            formId = form.attribs.class;
           }
         } else {
           formId = "undefined";
@@ -293,6 +317,17 @@ function storeResults(docstore, name, uri) {
 
   docstore[name].count = docstore[name].count + 1;
   docstore[name].urls.push(uri);
+}
+
+/**
+ * Check if var is iterable.
+ */
+function isIterable(obj) {
+  // checks for null and undefined
+  if (obj == null) {
+    return false;
+  }
+  return typeof obj[Symbol.iterator] === "function";
 }
 
 // Add calculation functions to Array prototype
