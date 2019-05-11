@@ -7,6 +7,7 @@
     "pretest": "eslint index.js --fix",
     "start": "node_modules/.bin/gulp",
     "fetch-sitemap": "node src/cli.js",
+    "debug-sitemap": "node --inspect-brk src/cli.js",
     "postinstall": "node_modules/.bin/bower install && node_modules/.bin/gulp install"
   },
   "keywords": [
@@ -29,22 +30,22 @@
   "dependencies": {
     "body-parser": "^1.18.3",
     "bower": "^1.8.4",
+    "cheerio": "latest",
+    "cli-progress": "latest",
     "ejs": "^2.6.1",
     "express": "^4.16.3",
     "express-alias": "^0.4.0",
     "gulp-live-server": "0.0.31",
     "http": "0.0.0",
     "jsonfile": "latest",
+    "meta-extractor": "latest",
     "morgan": "^1.9.1",
+    "node-fetch": "latest",
     "opn-cli": "^3.1.0",
     "path": "latest",
-    "reload": "^2.3.1",
     "prompt": "latest",
-    "cheerio": "latest",
+    "reload": "^2.3.1",
     "sitemapper": "latest",
-    "node-fetch": "latest",
-    "cli-progress": "latest",
-    "url": "latest",
-    "meta-extractor": "latest"
+    "url": "latest"
   }
 }
