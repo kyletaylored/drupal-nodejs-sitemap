@@ -1,51 +1,83 @@
-var gulp = require("gulp"),
-  concat = require("gulp-concat"),
-  rename = require("gulp-rename"),
-  sass = require('gulp-sass'),
-  gls = require("gulp-live-server"),
-  autoprefixer = require("gulp-autoprefixer");
+const gulp = require("gulp");
+const concat = require("gulp-concat");
+const rename = require("gulp-rename");
+const sass = require("gulp-sass");
+const gls = require("gulp-live-server");
 
-sass.compiler = require('node-sass');
+sass.compiler = require("node-sass");
 
-var DEST = "build";
-var JS_DEST = `${DEST}/js`;
+const DEST = "build";
+const JS_DEST = `${DEST}/js`;
 
-gulp.task('scripts', function() {
-  return gulp.src(["src/js/*.js"])
-    .pipe(concat('custom.js'))
-    .pipe(gulp.dest(JS_DEST))
-});
+gulp.task(
+  "scripts",
+  gulp.series(function(done) {
+    return gulp
+      .src(["src/js/*.js"])
+      .pipe(concat("custom.js"))
+      .pipe(gulp.dest(JS_DEST));
+    done();
+  })
+);
 
-gulp.task('sass', function () {
-  return gulp.src('src/scss/*.scss')
-    .pipe(sass().on('error', sass.logError))
-    .pipe(gulp.dest('./build/css'));
-});
+gulp.task(
+  "sass",
+  gulp.series(function(done) {
+    return gulp
+      .src("src/scss/*.scss")
+      .pipe(sass().on("error", sass.logError))
+      .pipe(gulp.dest("./build/css"));
+    done();
+  })
+);
 
-gulp.task('sass-min', function () {
-  return gulp.src('src/scss/*.scss')
-    .pipe(sass({outputStyle: 'compressed'}).on('error', sass.logError))
-    .pipe(gulp.dest('./build/css'));
-});
+gulp.task(
+  "sass-min",
+  gulp.series(function(done) {
+    return gulp
+      .src("src/scss/*.scss")
+      .pipe(sass({ outputStyle: "compressed" }).on("error", sass.logError))
+      .pipe(gulp.dest("./build/css"));
+    done();
+  })
+);
 
-gulp.task("watch", function() {
-  gulp.watch("src/scss/*.scss", ["sass"]);
-  gulp.watch("src/js/*.js", ["scripts"]);
-});
+gulp.task(
+  "watch",
+  gulp.series(function(done) {
+    gulp.watch("src/scss/*.scss", gulp.series("sass"));
+    gulp.watch("src/js/*.js", gulp.series("scripts"));
+    done();
+  })
+);
 
 // Express server
-gulp.task("serve", function() {
-  var server = gls.new("src/app.js");
-  server.start();
+gulp.task(
+  "serve",
+  gulp.series(function(done) {
+    var server = gls.new("src/app.js");
+    server.start();
 
-  // Note: try wrapping in a function if getting an error like `TypeError: Bad argument at TypeError (native) at ChildProcess.spawn`
-  gulp.watch("src/app.js", function() {
-    server.start.bind(server)();
-  });
-});
-
-gulp.task("install", ["scripts", "sass", "default"]);
+    // Note: try wrapping in a function if getting an error like `TypeError: Bad argument at TypeError (native) at ChildProcess.spawn`
+    gulp.watch("src/app.js", function() {
+      server.start.bind(server)();
+    });
+    done();
+  })
+);
 
 // Default Task
 // gulp.task('default', ['browser-sync', 'watch'])
-gulp.task("default", ["watch", "serve"]);
+gulp.task(
+  "default",
+  gulp.series("watch", "serve", function(done) {
+    done();
+  })
+);
+
+gulp.task(
+  "install",
+  gulp.series("scripts", "sass", function(done) {
+    done();
+  })
+);
