@@ -1,0 +1,16 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "GulpTester",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceRoot}/node_modules/.bin/gulp",
+      "stopOnEntry": true,
+      "args": [],
+      "cwd": "${workspaceRoot}",
+      "runtimeArgs": [],
+      "console": "internalConsole"
+    }
+  ]
+}
