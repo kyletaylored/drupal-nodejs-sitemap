@@ -1,6 +1,5 @@
 const gulp = require("gulp");
 const concat = require("gulp-concat");
-const rename = require("gulp-rename");
 const sass = require("gulp-sass");
 const gls = require("gulp-live-server");
 
