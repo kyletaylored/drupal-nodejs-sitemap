@@ -7,6 +7,7 @@ const cliProgress = require("cli-progress");
 const URL = require("url").URL;
 const path = require("path");
 const extract = require("meta-extractor");
+const Wappalyzer = require("wappalyzer");
 
 // Instansiate utilities.
 let sitemap = new Sitemapper();
@@ -44,8 +45,11 @@ async function main(sitemapUrl, file) {
     https = !sitemapUrl.match("^http://");
     // Get sample URL
     fileUrlSample = new URL(sites.sites[0]);
+    // Get Metadata
     metadata["pageCount"] = sites.sites.length;
     await extractMeta(fileUrlSample.origin);
+    // Get Wappalyzer data.
+    await extractWappalyzer(fileUrlSample.origin);
     // Start loop.
     bar.start(sites.sites.length, 0);
     await asyncForEach(sites.sites, async uri => processSitemapPage(uri));
@@ -102,6 +106,9 @@ async function main(sitemapUrl, file) {
       jsonfile.writeFile(masterFile, obj);
     }
   });
+
+  // End thread
+  process.exit(0);
 }
 
 /**
@@ -133,6 +140,25 @@ async function extractMeta(uri) {
       });
     }
   });
+}
+
+// Wappalyzer
+async function extractWappalyzer(uri) {
+  let options = {
+    maxUrls: 1,
+    maxWait: 2000,
+    debug: false
+  };
+  const wappalyzer = new Wappalyzer(uri, options);
+  await wappalyzer
+    .analyze()
+    .then(json => {
+      let wap = { wappalzyer: json };
+      metadata = Object.assign(wap, metadata);
+    })
+    .catch(error => {
+      console.log(error);
+    });
 }
 
 // Process the URL in the sitemap, store results in docstore.
