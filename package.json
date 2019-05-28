@@ -21,28 +21,27 @@
     "browser-sync": "^2.26.3",
     "gulp": "^4",
     "gulp-concat": "^2.6.0",
-    "gulp-rename": "^1.2.2",
+    "gulp-live-server": "0.0.31",
     "gulp-sass": "^4.0.2",
-    "node-sass": "^4.12.0"
+    "node-sass": "^4.12.0",
+    "reload": "^2.4.0",
+    "wappalyzer": "^5.8.2"
   },
   "dependencies": {
     "body-parser": "^1.18.3",
+    "bower": "^1.8.4",
     "cheerio": "latest",
     "cli-progress": "latest",
-    "bower": "^1.8.4",
     "ejs": "^2.6.1",
     "express": "^4.16.3",
     "express-alias": "^0.4.0",
-    "gulp-live-server": "0.0.31",
     "http": "0.0.0",
     "jsonfile": "latest",
     "meta-extractor": "latest",
     "morgan": "^1.9.1",
     "node-fetch": "latest",
-    "opn-cli": "^3.1.0",
     "path": "latest",
     "prompt": "latest",
-    "reload": "^2.3.1",
     "sitemapper": "latest",
     "url": "latest"
   }
