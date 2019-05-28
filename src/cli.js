@@ -275,11 +275,17 @@ async function extractFormTypes(forms, uri, docstore) {
     }
   }
 }
-
+/**
+ * Extract language from page.
+ * @param  {[type]} html     Cheerio HTML object.
+ * @param  {[type]} uri      URL of page being processed.
+ * @param  {[type]} docstore Place to store data.
+ */
 async function extractLanguage(html, uri, docstore) {
   if (html.attr("lang")) {
-    // let name = lang.getName(html.attr("lang"));
     storeResults(docstore, html.attr("lang"), uri);
+  } else if (html.attr("xml:lang")) {
+    storeResults(docstore, html.attr("xml:lang"), uri);
   }
 }
 
