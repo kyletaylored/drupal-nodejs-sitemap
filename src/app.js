@@ -1,17 +1,19 @@
 const express = require("express");
 let results = {};
-try {results = require("../results/sitemap-results.json")} catch(e){};
+try {
+  results = require("../results/sitemap-results.json");
+} catch (e) {}
 const http = require("http");
 const reload = require("reload");
 const bodyParser = require("body-parser");
 const logger = require("morgan");
 const jsonFile = require("jsonfile");
-const path = require('path');
+const path = require("path");
 const app = express();
 
 // Set up middle layer
 app.set("view engine", "ejs");
-app.set('views', path.join(__dirname, '/views'));
+app.set("views", path.join(__dirname, "/views"));
 app.use(express.static("build"));
 app.set("port", process.env.PORT || 3000);
 app.use(logger("dev"));
@@ -38,5 +40,5 @@ var server = http.createServer(app);
 reload(app);
 
 server.listen(app.get("port"), function() {
-  console.log("Web server listening on port " + app.get("port"));
+  console.log("Web server listening: http://127.0.0.1:" + app.get("port"));
 });
