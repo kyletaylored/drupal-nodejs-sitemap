@@ -257,7 +257,7 @@ async function extractNodeTypes(body, uri, docstore) {
       cName = className;
       // Multiple types of regex. Uncomment the one you need.
       // Drupal (default)
-      var regex = /(?:.*node-type-)/g;
+      var regex = /(?:.*node[-]+type-)/g;
       var cName = className.replace(regex, "").trim();
       // WordPress
       // var regex = /(?:.*-template-)/g;
