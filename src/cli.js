@@ -8,6 +8,7 @@ const URL = require("url").URL;
 const path = require("path");
 const extract = require("meta-extractor");
 const Wappalyzer = require("wappalyzer");
+const args = require('yargs').option('cms', {alias: 'c'}).option('regex', {alias: 'r'}).argv;
 
 // Instansiate utilities.
 let sitemap = new Sitemapper();
@@ -19,6 +20,27 @@ let fetchHeaders = {
   "User-Agent":
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.103 Safari/537.36"
 };
+
+// Calculate CMR (CMS Regex)
+let cms = ['drupal','wordpress', 'd8', 'd7', 'wp'];
+let cmr = /(?:.*node[-]+type-)/g;
+let regex = new RegExp( cms.join( "|" ), "i"); 
+if (args.cms && regex.test(args.cms)) {
+  switch (args.cms) {
+    case 'wordpress':
+    case 'wp':
+      cmr = /(?:.*-template-)/g;
+      break;
+    default:
+      // do nothing.
+      break;
+  }
+}
+
+// If custom regex is supplied, always override.
+if (args.regex) {
+  cmr = args.regex;
+}
 
 // Debugging
 // let loopLimit = 20
@@ -62,7 +84,7 @@ async function main(sitemapUrl, file) {
   file = "./results/" + key + ".json";
 
   // Kill progress bar.
-  await bar.stop();
+  bar.stop();
 
   // Process math for response times, merge in.
   let respObj = {
@@ -90,22 +112,6 @@ async function main(sitemapUrl, file) {
 
   // Write to own file
   await jsonfile.writeFile(file, metaObj);
-
-  // Update master list.
-  let masterFile = "./results/sitemap-results.json";
-  jsonfile.readFile(masterFile, (err, obj) => {
-    if (err !== null) {
-      if (err.code === "ENOENT") {
-        let tmpObj = {};
-        tmpObj[key] = key;
-        jsonfile.writeFile(masterFile, tmpObj);
-        log("Created new sitemap-results.json file.");
-      }
-    } else {
-      obj[key] = key;
-      jsonfile.writeFile(masterFile, obj);
-    }
-  });
 
   // End thread
   process.exit(0);
@@ -254,15 +260,8 @@ async function extractNodeTypes(body, uri, docstore) {
   let classes = await body.attr("class");
   if (classes) {
     for (let className of classes.split(" ")) {
-      cName = className;
-      // Multiple types of regex. Uncomment the one you need.
-      // Drupal (default)
-      var regex = /(?:.*node[-]+type-)/g;
-      var cName = className.replace(regex, "").trim();
-      // WordPress
-      // var regex = /(?:.*-template-)/g;
-      // var cName = className.trim();
-      if (className.match(regex)) {
+      let cName = className.trim();
+      if (className.match(cmr)) {
         storeResults(docstore, cName, uri);
         break;
       }
@@ -394,8 +393,8 @@ var properties = [
 
 // Launch script.
 // Start capturing input - use CLI or prompt.
-if (process.argv[2]) {
-  main(process.argv[2]);
+if (args._[0]) {
+  main(args._[0]);
 } else {
   prompt.start();
   prompt.get(properties, function(err, result) {

@@ -43,6 +43,7 @@
     "path": "latest",
     "prompt": "latest",
     "sitemapper": "latest",
-    "url": "latest"
+    "url": "latest",
+    "yargs": "^15.0.2"
   }
 }

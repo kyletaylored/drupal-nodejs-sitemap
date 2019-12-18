@@ -195,13 +195,15 @@ var updateData = {
     }
   },
   updateMeta: function(data) {
+    console.log(data);
     let meta = {
-      page_count: data.metadata.pageCount,
+      page_count: data.metadata.pageCount || 0,
       avg_time: (data.headers.responseTimes.average / 1000).toFixed(2),
       total_ct: Object.keys(data.nodeTypes).length,
       total_forms: Object.keys(data.formTypes).length,
       total_languages: Object.keys(data.langCodes).length,
-      total_errors: Object.keys(data.statusCodes).length
+      total_errors: Object.keys(data.statusCodes).length,
+      wappalyzer: data.metadata.wappalyzer || {}
     };
     // Loop through object.
     for (var value in meta) {

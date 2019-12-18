@@ -28,6 +28,18 @@ Alternatively, you can either pass in the sitemap URL as an argument, or wait fo
 npm run fetch-sitemap https://www.example.com/sitemap.xml
 ```
 
+Currently, the script does not detect the CMS to update the content type regex, but if you know the CMS, you can pass it in via an argument.
+
+```bash
+npm run fetch-sitemap https://www.example.com/sitemap.xml --cms="drupal | wordpress"
+```
+
+You can also pass in a custom regex match to detect your own content types regardless of CMS. This will always override any CMS detection.
+
+```bash
+npm run fetch-sitemap https://www.example.com/sitemap.xml --regex="/(?:.*node[-]+type-)/g"
+```
+
 The output will look similar to the following:
 
 ```json
