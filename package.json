@@ -41,6 +41,7 @@
     "morgan": "^1.9.1",
     "node-fetch": "latest",
     "path": "latest",
+    "promise-limit": "^2.7.0",
     "prompt": "latest",
     "sitemapper": "latest",
     "url": "latest",

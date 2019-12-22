@@ -8,17 +8,19 @@ const URL = require("url").URL;
 const path = require("path");
 const extract = require("meta-extractor");
 const Wappalyzer = require("wappalyzer");
+const promiseLimit = require("promise-limit");
 const args = require('yargs').option('cms', {alias: 'c'}).option('regex', {alias: 'r'}).argv;
 
 // Instansiate utilities.
 let sitemap = new Sitemapper();
+sitemap.timeout = 5000;
 let bar = new cliProgress.Bar({}, cliProgress.Presets.shades_classic);
 let log = console.log.bind(this);
 let fileUrlSample = "";
 let https = true;
 let fetchHeaders = {
   "User-Agent":
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.103 Safari/537.36"
+    "(Sherlock CMS Auditer/1.0)"
 };
 
 // Calculate CMR (CMS Regex)
@@ -65,16 +67,21 @@ async function main(sitemapUrl, file) {
     // Process sitemap for URLs
     let sites = await sitemap.fetch(sitemapUrl);
     https = !sitemapUrl.match("^http://");
+    
     // Get sample URL
     fileUrlSample = new URL(sites.sites[0]);
+    
     // Get Metadata
     metadata["pageCount"] = sites.sites.length;
     await extractMeta(fileUrlSample.origin);
+    
     // Get Wappalyzer data.
     await extractWappalyzer(fileUrlSample.origin);
+    
     // Start loop.
     bar.start(sites.sites.length, 0);
     await asyncForEach(sites.sites, async uri => processSitemapPage(uri));
+
   } catch (err) {
     log("Err: ", err);
   }
@@ -105,8 +112,6 @@ async function main(sitemapUrl, file) {
     headers: headers
   };
 
-  // Get final filename.
-
   // Print results
   await log(metaObj);
 
@@ -118,56 +123,9 @@ async function main(sitemapUrl, file) {
 }
 
 /**
- * Helper function for async processing in a for loop.
- * @param {array} array An array to process
- * @param {function} callback A callback function
- */
-async function asyncForEach(array, callback) {
-  // let limit = loopLimit || array.length
-  // requests = [];
-  for (let index = 0; index < array.length; index++) {
-    await callback(array[index], index, array);
-    // await requests.push(callback(array[index], index, array));
-  }
-  // await Promise.all(requests);
-}
-
-/**
- * Get metadata.
- * Check for redirect, then use final path as URL
+ * Process the URL in the sitemap, store results in docstore.
  * @param {string} uri A URL to be processed.
  */
-async function extractMeta(uri) {
-  await fetch(uri, { headers: fetchHeaders }).then(resp => {
-    if (resp) {
-      extract({ uri: resp.url }, (_err, res) => {
-        res = res || {};
-        metadata = Object.assign(res, metadata);
-      });
-    }
-  });
-}
-
-// Wappalyzer
-async function extractWappalyzer(uri) {
-  let options = {
-    maxUrls: 1,
-    maxWait: 2000,
-    debug: false
-  };
-  const wappalyzer = new Wappalyzer(uri, options);
-  await wappalyzer
-    .analyze()
-    .then(json => {
-      let wap = { wappalzyer: json };
-      metadata = Object.assign(wap, metadata);
-    })
-    .catch(error => {
-      console.log(error);
-    });
-}
-
-// Process the URL in the sitemap, store results in docstore.
 async function processSitemapPage(uri) {
   let startTime = new Date().getTime();
 
@@ -210,6 +168,8 @@ async function processSitemapPage(uri) {
               extractFormTypes(forms, uri, formTypes);
               storeResults(statusCodes, resp.status, uri);
             } else {
+
+              // Check for redirects
               if (resp.redirected) {
                 let redCodes = {
                   follow: "301 / 302",
@@ -237,7 +197,7 @@ async function processSitemapPage(uri) {
           case "ETIMEDOUT":
             // Not sure, but log as broken for now.
             storeResults(statusCodes, err.code, uri);
-            return 0;
+            // return 0;
             break;
           default:
             log(err);
@@ -248,6 +208,72 @@ async function processSitemapPage(uri) {
 
   // Update the current value of progress by 1, even if request fails.
   bar.increment();
+
+  // Return promise.
+  return new Promise(function (resolve) {
+    setTimeout(() => {
+      resolve(uri);
+    }, 100);
+  })
+}
+
+/**
+ * Helper function for async processing in a for loop.
+ * @param {array} array An array to process
+ * @param {function} callback A callback function
+ */
+async function asyncForEach(array, callback) {
+  // Number of pages processed at a time.
+  let threads = 10;
+  let plimit = promiseLimit(threads);
+
+  // Implement parallel processing through Promises
+  await Promise.all(array.map((uri) => {
+    return plimit(() => callback(uri))
+  })).then(results => {
+    // Do nothing.
+  }).catch((e) => {
+    console.log(e);
+  });
+  
+}
+
+/**
+ * Get metadata.
+ * Check for redirect, then use final path as URL
+ * @param {string} uri A URL to be processed.
+ */
+async function extractMeta(uri) {
+  await fetch(uri, { headers: fetchHeaders }).then(resp => {
+    if (resp) {
+      extract({ uri: resp.url }, (_err, res) => {
+        res = res || {};
+        metadata = Object.assign(res, metadata);
+      });
+    }
+  });
+}
+
+/**
+ * Get Wappalyzer data
+ * @param {string} uri  A URL to be processed.
+ */
+async function extractWappalyzer(uri) {
+  let options = {
+    maxUrls: 1,
+    maxWait: 2000,
+    debug: false
+  };
+  const wappalyzer = new Wappalyzer(uri, options);
+  await wappalyzer
+    .analyze()
+    .then(json => {
+      let wap = { wappalzyer: json };
+      metadata = Object.assign(wap, metadata);
+    })
+    .catch(error => {
+      console.log(error);
+    });
 }
 
 /**
@@ -261,8 +287,10 @@ async function extractNodeTypes(body, uri, docstore) {
   if (classes) {
     for (let className of classes.split(" ")) {
       let cName = className.trim();
-      if (className.match(cmr)) {
-        storeResults(docstore, cName, uri);
+      if (cName.match(cmr)) {
+        // Remove the regex from class name
+        let name = cName.replace(cmr, "");
+        storeResults(docstore, name, uri);
         break;
       }
     }
